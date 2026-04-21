@@ -436,8 +436,6 @@ select option { background: var(--sf2); color: var(--tx); }
         <div class="dist-n">Valentina</div>
       </div>
     </div>
-    <label>Ajustar % Diego</label>
-    <input type="range" class="slider" id="slider" min="0" max="100" value="40" oninput="updateDist(this.value)">
   </div>
 
   <!-- COMPROBANTE -->
@@ -566,13 +564,7 @@ function renderInsumos() {
   }).join('');
 }
 
-// ─── Distribución ─────────────────────────────────────
-function updateDist(v) {
-  pctYo = parseInt(v);
-  document.getElementById('pctYo').textContent   = pctYo + '%';
-  document.getElementById('pctVale').textContent = (100 - pctYo) + '%';
-  calcular();
-}
+// ─── Distribución fija: Diego 40% / Valentina 60% ────
 
 // ─── Archivo ──────────────────────────────────────────
 function handleFile(input) {
@@ -700,8 +692,6 @@ function limpiar() {
   document.getElementById('previewImg').style.display = 'none';
   document.querySelector('#uploadZone .upload-txt').textContent = 'Toca para subir imagen del comprobante';
   imgUrl = null;
-  document.getElementById('slider').value = 40;
-  updateDist(40);
   calcular();
 }
 
