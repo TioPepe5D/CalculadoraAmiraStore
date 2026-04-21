@@ -189,6 +189,18 @@ select option { background: var(--sf2); color: var(--tx); }
 .cat-l { font-size: 10px; color: var(--mu); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 5px; }
 .cat-i input { padding: 9px 12px; font-size: 14px; }
 
+/* ═══════════ PRECIO SELECTOR ═══════════ */
+.precio-btns { display: flex; gap: 6px; margin-top: 0; }
+.precio-btn {
+  flex: 1; background: var(--sf3); border: 1.5px solid var(--bd2);
+  border-radius: 8px; padding: 7px 4px; font-size: 12px; font-family: var(--bf);
+  color: var(--mu); cursor: pointer; text-align: center; line-height: 1.4;
+  transition: all .2s;
+}
+.precio-btn .kilero { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
+.precio-btn.activo { background: var(--acd); border-color: var(--ac); color: var(--acl); font-weight: 700; }
+.precio-fijo { background: var(--sf3); border: 1px solid var(--bd2); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: var(--ac); font-weight: 700; text-align: center; }
+
 /* ═══════════ INSUMOS ═══════════ */
 .ins-fila {
   display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
@@ -324,44 +336,69 @@ select option { background: var(--sf2); color: var(--tx); }
     <div class="cat">
       <div class="cat-h">
         <div class="cat-n">🇨🇱 Cadena</div>
-        <div class="cat-p" id="p-Cadena">$0/gr</div>
+        <div class="cat-p" id="p-Cadena">$450/gr</div>
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Cadena" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Cadena" placeholder="0" min="0" value="450"></div>
+        <div>
+          <div class="cat-l">$ por gramo</div>
+          <div class="precio-btns">
+            <button class="precio-btn activo" data-cat="Cadena" onclick="setPrecio('Cadena',450,this)">$450</button>
+            <button class="precio-btn" data-cat="Cadena" onclick="setPrecio('Cadena',400,this)">$400<span class="kilero">Kilero</span></button>
+          </div>
+          <input type="hidden" class="cat-pgr" data-cat="Cadena" value="450">
+        </div>
       </div>
     </div>
 
     <div class="cat">
       <div class="cat-h">
         <div class="cat-n">🇨🇱 Micro</div>
-        <div class="cat-p" id="p-Micro">$0/gr</div>
+        <div class="cat-p" id="p-Micro">$650/gr</div>
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Micro" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Micro" placeholder="0" min="0" value="650"></div>
+        <div>
+          <div class="cat-l">$ por gramo</div>
+          <div class="precio-btns">
+            <button class="precio-btn activo" data-cat="Micro" onclick="setPrecio('Micro',650,this)">$650</button>
+            <button class="precio-btn" data-cat="Micro" onclick="setPrecio('Micro',550,this)">$550<span class="kilero">Kilero</span></button>
+          </div>
+          <input type="hidden" class="cat-pgr" data-cat="Micro" value="650">
+        </div>
       </div>
     </div>
 
     <div class="cat">
       <div class="cat-h">
         <div class="cat-n">🇮🇹 Italy</div>
-        <div class="cat-p" id="p-Italy">$0/gr</div>
+        <div class="cat-p" id="p-Italy">$2.000/gr</div>
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Italy" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Italy" placeholder="0" min="0" value="2000"></div>
+        <div>
+          <div class="cat-l">$ por gramo</div>
+          <div class="precio-fijo">$2.000</div>
+          <input type="hidden" class="cat-pgr" data-cat="Italy" value="2000">
+        </div>
       </div>
     </div>
 
     <div class="cat">
       <div class="cat-h">
         <div class="cat-n">⚜️ GF 18 K</div>
-        <div class="cat-p" id="p-GF18K">$0/gr</div>
+        <div class="cat-p" id="p-GF18K">$1.400/gr</div>
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="GF18K" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="GF18K" placeholder="0" min="0" value="1400"></div>
+        <div>
+          <div class="cat-l">$ por gramo</div>
+          <div class="precio-btns">
+            <button class="precio-btn activo" data-cat="GF18K" onclick="setPrecio('GF18K',1400,this)">$1.400</button>
+            <button class="precio-btn" data-cat="GF18K" onclick="setPrecio('GF18K',1300,this)">$1.300<span class="kilero">Kilero</span></button>
+          </div>
+          <input type="hidden" class="cat-pgr" data-cat="GF18K" value="1400">
+        </div>
       </div>
     </div>
   </div>
@@ -484,6 +521,16 @@ function setTema(nombre, btn, etiqueta) {
     }
   } catch(e){}
 })();
+
+// ─── Precio fijo ──────────────────────────────────────
+function setPrecio(cat, val, btn) {
+  document.querySelector('.cat-pgr[data-cat="' + cat + '"]').value = val;
+  document.querySelectorAll('.precio-btn[data-cat="' + cat + '"]').forEach(function(b){ b.classList.remove('activo'); });
+  btn.classList.add('activo');
+  var pel = document.getElementById('p-' + cat);
+  if (pel) pel.textContent = '$' + val.toLocaleString('es-CL') + '/gr';
+  calcular();
+}
 
 // ─── Insumos ──────────────────────────────────────────
 function addInsumo() {
@@ -636,10 +683,16 @@ function copiarConImg() {
 function limpiar() {
   if (!confirm('¿Limpiar todos los datos?')) return;
   document.querySelectorAll('input[type="number"], input[type="text"]').forEach(function(el){ el.value = ''; });
-  document.querySelector('.cat-pgr[data-cat="Cadena"]').value = '450';
-  document.querySelector('.cat-pgr[data-cat="Micro"]').value  = '650';
-  document.querySelector('.cat-pgr[data-cat="Italy"]').value  = '2000';
-  document.querySelector('.cat-pgr[data-cat="GF18K"]').value  = '1400';
+  // Restaurar precios fijos y botones
+  var defaults = { Cadena: 450, Micro: 650, Italy: 2000, GF18K: 1400 };
+  Object.keys(defaults).forEach(function(cat) {
+    document.querySelector('.cat-pgr[data-cat="' + cat + '"]').value = defaults[cat];
+    var btns = document.querySelectorAll('.precio-btn[data-cat="' + cat + '"]');
+    btns.forEach(function(b){ b.classList.remove('activo'); });
+    if (btns.length) btns[0].classList.add('activo');
+    var pel = document.getElementById('p-' + cat);
+    if (pel) pel.textContent = '$' + defaults[cat].toLocaleString('es-CL') + '/gr';
+  });
   document.getElementById('ventaPor').selectedIndex = 0;
   document.getElementById('pagoa').selectedIndex    = 0;
   insumos = [];
