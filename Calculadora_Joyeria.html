@@ -586,14 +586,14 @@ function calcular() {
   var pago    = document.getElementById('pagoa').value;
   var cliente = document.getElementById('nombreCliente').value.trim() || '—';
 
-  var msg = 'Venta Por ' + por + '\nPago a ' + pago + '\nNombre: ' + cliente + '\n';
+  var msg = 'Venta Por ' + por + '\nPago a ' + pago + '\nNombre: ' + cliente + '\n\n';
   lineas.forEach(function(l){
     msg += l.gr + ' | ' + catNombres[l.cat] + ' ' + (emojis[l.cat] || '') + '\n';
   });
   insumos.forEach(function(ins){
-    msg += fmt(ins.costo) + ' (Costo) | ' + ins.desc + ' 💎\n';
+    msg += fmt(ins.costo) + ' | ' + ins.desc + ' 💎\n';
   });
-  if (venta > 0) msg += 'Venta: ' + fmt(venta);
+  if (venta > 0) msg += '\nVenta: ' + fmt(venta);
 
   document.getElementById('msgBox').textContent = msg;
 }
