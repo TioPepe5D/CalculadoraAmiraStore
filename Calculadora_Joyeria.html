@@ -327,7 +327,7 @@ select option { background: var(--sf2); color: var(--tx); }
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Cadena" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Cadena" placeholder="0" min="0"></div>
+        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Cadena" placeholder="0" min="0" value="450"></div>
       </div>
     </div>
 
@@ -338,7 +338,7 @@ select option { background: var(--sf2); color: var(--tx); }
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Micro" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Micro" placeholder="0" min="0"></div>
+        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Micro" placeholder="0" min="0" value="650"></div>
       </div>
     </div>
 
@@ -349,7 +349,7 @@ select option { background: var(--sf2); color: var(--tx); }
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="Italy" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Italy" placeholder="0" min="0"></div>
+        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="Italy" placeholder="0" min="0" value="2000"></div>
       </div>
     </div>
 
@@ -360,7 +360,7 @@ select option { background: var(--sf2); color: var(--tx); }
       </div>
       <div class="cat-i">
         <div><div class="cat-l">Gramos</div><input type="number" class="cat-gr" data-cat="GF18K" placeholder="0" min="0" step="0.01"></div>
-        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="GF18K" placeholder="0" min="0"></div>
+        <div><div class="cat-l">$ por gramo</div><input type="number" class="cat-pgr" data-cat="GF18K" placeholder="0" min="0" value="1400"></div>
       </div>
     </div>
   </div>
@@ -431,7 +431,7 @@ select option { background: var(--sf2); color: var(--tx); }
   </div>
 
   <button class="btn-p" onclick="copiarMsg()">📋 Copiar Mensaje</button>
-  <button class="btn-s" onclick="copiarConImg()">📸 Copiar Mensaje + Imagen</button>
+  <button class="btn-s" onclick="copiarConImg()">📤 Compartir Mensaje + Imagen</button>
   <button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button>
 
 </div><!-- /wrap -->
@@ -608,19 +608,26 @@ function copiarMsg() {
 
 function copiarConImg() {
   var texto = document.getElementById('msgBox').textContent;
-  if (!imgUrl) {
-    copiarMsg();
-    return;
-  }
+  if (!imgUrl) { copiarMsg(); return; }
+
   fetch(imgUrl)
     .then(function(r){ return r.blob(); })
-    .then(function(blob){
+    .then(function(blob) {
+      var ext  = blob.type.includes('png') ? 'png' : 'jpg';
+      var file = new File([blob], 'comprobante.' + ext, { type: blob.type });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ text: texto, files: [file] })
+          .then(function(){ mostrarToast('¡Compartido!'); });
+      }
+
+      // fallback: portapapeles
       var item = {};
       item['text/plain'] = new Blob([texto], { type: 'text/plain' });
       item[blob.type]    = blob;
-      return navigator.clipboard.write([new ClipboardItem(item)]);
+      return navigator.clipboard.write([new ClipboardItem(item)])
+        .then(function(){ mostrarToast('¡Mensaje + imagen copiados!'); });
     })
-    .then(function(){ mostrarToast('¡Mensaje + imagen copiados!'); })
     .catch(function(){ copiarMsg(); });
 }
 
@@ -628,6 +635,10 @@ function copiarConImg() {
 function limpiar() {
   if (!confirm('¿Limpiar todos los datos?')) return;
   document.querySelectorAll('input[type="number"], input[type="text"]').forEach(function(el){ el.value = ''; });
+  document.querySelector('.cat-pgr[data-cat="Cadena"]').value = '450';
+  document.querySelector('.cat-pgr[data-cat="Micro"]').value  = '650';
+  document.querySelector('.cat-pgr[data-cat="Italy"]').value  = '2000';
+  document.querySelector('.cat-pgr[data-cat="GF18K"]').value  = '1400';
   document.getElementById('ventaPor').selectedIndex = 0;
   document.getElementById('pagoa').selectedIndex    = 0;
   insumos = [];
