@@ -307,6 +307,16 @@ select option { background: var(--sf2); color: var(--tx); }
 .hbtn:hover { border-color: var(--acl); color: var(--acl); }
 .hbtn.danger:hover { border-color: var(--er); color: var(--er); }
 .sin-historial { text-align: center; padding: 40px 0; color: var(--mu); font-size: 13px; }
+
+/* ═══════════ REPORTES ═══════════ */
+.reporte-card { background: var(--sf); border: 1px solid var(--ac); border-radius: 14px; padding: 22px; margin-bottom: 14px; }
+.reporte-t { font-family: var(--hf); font-size: 13px; color: var(--ac); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; text-align: center; }
+.reporte-fila { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--bd); }
+.reporte-fila:last-child { border-bottom: none; }
+.reporte-lbl { font-size: 13px; color: var(--mu); }
+.reporte-val { font-family: var(--hf); font-size: 17px; font-weight: 700; color: var(--tx); }
+.reporte-val.gold { color: var(--ac); }
+.reporte-sep { height: 8px; }
 .htotal-resumen {
   background: var(--sf2); border: 1px solid var(--bd); border-radius: 10px;
   padding: 14px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;
@@ -526,6 +536,7 @@ select option { background: var(--sf2); color: var(--tx); }
   <div class="tabs">
     <button class="tab-btn activo" id="tabVenta" onclick="showTab('venta')">📝 Venta</button>
     <button class="tab-btn" id="tabHistorial" onclick="showTab('historial')">🕒 Historial</button>
+    <button class="tab-btn" id="tabReportes" onclick="showTab('reportes')">📊 Reportes</button>
   </div>
 
   <!-- ACCIONES VENTA -->
@@ -534,6 +545,22 @@ select option { background: var(--sf2); color: var(--tx); }
     <button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>
     <button class="btn-s" onclick="copiarConImg()">📤 Compartir Mensaje + Imagen</button>
     <button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button>
+  </div>
+
+  <!-- REPORTES -->
+  <div id="secReportes" style="display:none">
+    <div class="reporte-card">
+      <div class="reporte-t">📊 Reporte General</div>
+      <div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val" id="rpVentas">$0</span></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Costo total</span><span class="reporte-val" id="rpCosto">$0</span></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Cantidad de ventas</span><span class="reporte-val" id="rpCantidad">0</span></div>
+      <div class="reporte-sep"></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Pagos a Diego</span><span class="reporte-val" id="rpPagosDiego">$0</span></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Pagos a Vale</span><span class="reporte-val" id="rpPagosVale">$0</span></div>
+      <div class="reporte-sep"></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Utilidad Diego</span><span class="reporte-val gold" id="rpUtilDiego">$0</span></div>
+      <div class="reporte-fila"><span class="reporte-lbl">Utilidad Vale</span><span class="reporte-val gold" id="rpUtilVale">$0</span></div>
+    </div>
   </div>
 
   <!-- HISTORIAL -->
@@ -793,12 +820,37 @@ document.addEventListener('input', function(e) {
 
 // ─── Tabs ─────────────────────────────────────────────
 function showTab(tab) {
-  var esHistorial = tab === 'historial';
-  document.getElementById('secAcciones').style.display  = esHistorial ? 'none' : '';
-  document.getElementById('secHistorial').style.display = esHistorial ? '' : 'none';
-  document.getElementById('tabVenta').classList.toggle('activo', !esHistorial);
-  document.getElementById('tabHistorial').classList.toggle('activo', esHistorial);
-  if (esHistorial) renderHistorial();
+  document.getElementById('secAcciones').style.display  = tab === 'venta'     ? '' : 'none';
+  document.getElementById('secHistorial').style.display = tab === 'historial' ? '' : 'none';
+  document.getElementById('secReportes').style.display  = tab === 'reportes'  ? '' : 'none';
+  document.getElementById('tabVenta').classList.toggle('activo',     tab === 'venta');
+  document.getElementById('tabHistorial').classList.toggle('activo', tab === 'historial');
+  document.getElementById('tabReportes').classList.toggle('activo',  tab === 'reportes');
+  if (tab === 'historial') renderHistorial();
+  if (tab === 'reportes')  renderReportes();
+}
+
+function renderReportes() {
+  var h = cargarHistorial();
+  var totalVentas = 0, totalUtil = 0, totalDiego = 0, totalVale = 0;
+  var pagosDiego = 0, pagosVale = 0;
+  h.forEach(function(v) {
+    totalVentas += v.totalVenta;
+    totalUtil   += v.utilidad;
+    totalDiego  += v.diego;
+    totalVale   += v.vale;
+    if (v.pagoa === 'Diego')     pagosDiego += v.totalVenta;
+    if (v.pagoa === 'Valentina') pagosVale  += v.totalVenta;
+  });
+  var costoTotal = totalVentas - totalUtil;
+
+  document.getElementById('rpVentas').textContent     = fmt(totalVentas);
+  document.getElementById('rpCosto').textContent      = fmt(Math.max(0, costoTotal));
+  document.getElementById('rpCantidad').textContent   = h.length;
+  document.getElementById('rpPagosDiego').textContent = fmt(pagosDiego);
+  document.getElementById('rpPagosVale').textContent  = fmt(pagosVale);
+  document.getElementById('rpUtilDiego').textContent  = fmt(Math.max(0, totalDiego));
+  document.getElementById('rpUtilVale').textContent   = fmt(Math.max(0, totalVale));
 }
 
 // ─── Historial ────────────────────────────────────────
