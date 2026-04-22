@@ -257,6 +257,52 @@ select option { background: var(--sf2); color: var(--tx); }
 .btn-s:hover { border-color: var(--ac); color: var(--ac); }
 .btn-danger { color: var(--er) !important; border-color: rgba(224,90,90,.35) !important; }
 
+
+/* ═══════════ HISTORIAL ═══════════ */
+.tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.tab-btn {
+  flex: 1; background: var(--sf2); border: 1.5px solid var(--bd2); border-radius: 22px;
+  color: var(--mu); font-family: var(--bf); font-size: 13px; font-weight: 500;
+  padding: 10px 8px; cursor: pointer; transition: all .2s; text-align: center;
+}
+.tab-btn.activo { background: var(--ac); border-color: var(--ac); color: var(--bg); font-weight: 700; }
+.search-box {
+  width: 100%; background: var(--sf2); border: 1px solid var(--bd2); border-radius: 10px;
+  color: var(--tx); font-family: var(--bf); font-size: 14px; padding: 11px 14px 11px 38px;
+  outline: none; transition: border-color .2s; margin-bottom: 14px; box-sizing: border-box;
+}
+.search-box:focus { border-color: var(--ac); }
+.search-wrap { position: relative; }
+.search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+.hventa {
+  background: var(--sf); border: 1px solid var(--bd); border-radius: 14px;
+  padding: 16px; margin-bottom: 12px; transition: background .3s;
+}
+.hventa-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.hventa-nombre { font-size: 16px; font-weight: 700; color: var(--tx); }
+.hventa-fecha { font-size: 11px; color: var(--mu); white-space: nowrap; margin-left: 8px; }
+.hventa-meta { font-size: 12px; color: var(--mu); margin-bottom: 8px; }
+.hventa-meta strong { color: var(--tx); }
+.hventa-detalle { font-size: 12px; color: var(--mu); line-height: 1.7; margin-bottom: 10px; }
+.hventa-total { font-family: var(--hf); font-size: 22px; font-weight: 700; color: var(--ac); margin-bottom: 4px; }
+.hventa-dist { font-size: 11px; color: var(--mu); margin-bottom: 12px; }
+.hventa-dist span { color: var(--tx); font-weight: 600; }
+.hventa-acc { display: flex; gap: 8px; }
+.hbtn {
+  background: var(--sf2); border: 1.5px solid var(--bd2); border-radius: 50%;
+  width: 38px; height: 38px; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0;
+}
+.hbtn:hover { border-color: var(--ac); }
+.hbtn.danger:hover { border-color: var(--er); }
+.sin-historial { text-align: center; padding: 30px 0; color: var(--mu); font-size: 13px; }
+.htotal-resumen {
+  background: var(--sf2); border: 1px solid var(--bd); border-radius: 10px;
+  padding: 14px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;
+}
+.htotal-item .val { font-family: var(--hf); font-size: 16px; font-weight: 700; color: var(--ac); }
+.htotal-item .lbl { font-size: 10px; color: var(--mu); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
+
 /* ═══════════ TOAST ═══════════ */
 .toast {
   position: fixed; bottom: 24px; left: 50%;
@@ -466,9 +512,33 @@ select option { background: var(--sf2); color: var(--tx); }
     <div class="msg" id="msgBox">—</div>
   </div>
 
-  <button class="btn-p" onclick="copiarMsg()">📋 Copiar Mensaje</button>
-  <button class="btn-s" onclick="copiarConImg()">📤 Compartir Mensaje + Imagen</button>
-  <button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn activo" id="tabVenta" onclick="showTab('venta')">📝 Venta</button>
+    <button class="tab-btn" id="tabHistorial" onclick="showTab('historial')">🕒 Historial</button>
+  </div>
+
+  <!-- ACCIONES VENTA -->
+  <div id="secAcciones">
+    <button class="btn-p" onclick="guardarVenta()">💾 Guardar Venta</button>
+    <button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>
+    <button class="btn-s" onclick="copiarConImg()">📤 Compartir Mensaje + Imagen</button>
+    <button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div id="secHistorial" style="display:none">
+    <div id="htotalResumen" class="htotal-resumen">
+      <div class="htotal-item"><div class="val" id="htVentas">0</div><div class="lbl">Ventas</div></div>
+      <div class="htotal-item"><div class="val" id="htDiego">$0</div><div class="lbl">Diego</div></div>
+      <div class="htotal-item"><div class="val" id="htVale">$0</div><div class="lbl">Valentina</div></div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input class="search-box" type="text" id="buscador" placeholder="Buscar por cliente o categoría..." oninput="renderHistorial()">
+    </div>
+    <div id="listaHistorial"></div>
+  </div>
 
 </div><!-- /wrap -->
 
@@ -709,6 +779,133 @@ document.addEventListener('input', function(e) {
     calcular();
   }
 });
+
+
+// ─── Tabs ─────────────────────────────────────────────
+function showTab(tab) {
+  var esHistorial = tab === 'historial';
+  document.getElementById('secAcciones').style.display  = esHistorial ? 'none' : '';
+  document.getElementById('secHistorial').style.display = esHistorial ? '' : 'none';
+  document.getElementById('tabVenta').classList.toggle('activo', !esHistorial);
+  document.getElementById('tabHistorial').classList.toggle('activo', esHistorial);
+  if (esHistorial) renderHistorial();
+}
+
+// ─── Historial ────────────────────────────────────────
+function cargarHistorial() {
+  try { return JSON.parse(localStorage.getItem('historial_ammira') || '[]'); } catch(e) { return []; }
+}
+function guardarHistorialLS(h) {
+  try { localStorage.setItem('historial_ammira', JSON.stringify(h)); } catch(e) {}
+}
+
+function guardarVenta() {
+  var venta = parseFloat(document.getElementById('totalVenta').value) || 0;
+  if (venta <= 0) { mostrarToast('Ingresa el total de venta primero'); return; }
+  var cliente = document.getElementById('nombreCliente').value.trim();
+  if (!cliente) { mostrarToast('Ingresa el nombre del cliente'); return; }
+
+  var costoOro = 0;
+  var lineas = [];
+  document.querySelectorAll('.cat-gr').forEach(function(input) {
+    var cat = input.dataset.cat;
+    var gr  = parseFloat(input.value) || 0;
+    var pgrEl = document.querySelector('.cat-pgr[data-cat="' + cat + '"]');
+    var pgr   = pgrEl ? (parseFloat(pgrEl.value) || 0) : 0;
+    if (gr > 0 && pgr > 0) { costoOro += gr * pgr; lineas.push({ cat: cat, gr: gr, pgr: pgr }); }
+  });
+  var costoIns = insumos.reduce(function(a,b){ return a + b.costo; }, 0);
+  var totalCosto = costoOro + costoIns + 1000;
+  var util  = venta - totalCosto;
+  var diego = util * 0.40;
+  var vale  = util * 0.60;
+
+  var ahora = new Date();
+  var registro = {
+    id: Date.now(),
+    fecha: ahora.toLocaleDateString('es-CL', { day:'2-digit', month:'short' }),
+    hora:  ahora.toLocaleTimeString('es-CL', { hour:'2-digit', minute:'2-digit' }),
+    cliente: cliente,
+    ventaPor: document.getElementById('ventaPor').value,
+    pagoa:    document.getElementById('pagoa').value,
+    lineas:   lineas,
+    insumos:  insumos.slice(),
+    totalVenta: venta,
+    utilidad:   util,
+    diego:  diego,
+    vale:   vale,
+    mensaje: document.getElementById('msgBox').textContent
+  };
+
+  var h = cargarHistorial();
+  h.unshift(registro);
+  guardarHistorialLS(h);
+  mostrarToast('✓ Venta guardada en historial');
+}
+
+function eliminarVenta(id) {
+  if (!confirm('¿Eliminar esta venta del historial?')) return;
+  var h = cargarHistorial().filter(function(v){ return v.id !== id; });
+  guardarHistorialLS(h);
+  renderHistorial();
+}
+
+function renderHistorial() {
+  var q = (document.getElementById('buscador').value || '').toLowerCase();
+  var h = cargarHistorial();
+
+  // Totales
+  var totalDiego = 0, totalVale = 0;
+  h.forEach(function(v){ totalDiego += v.diego; totalVale += v.vale; });
+  document.getElementById('htVentas').textContent = h.length;
+  document.getElementById('htDiego').textContent  = fmt(Math.max(0, totalDiego));
+  document.getElementById('htVale').textContent   = fmt(Math.max(0, totalVale));
+
+  // Filtro búsqueda
+  if (q) h = h.filter(function(v){
+    return v.cliente.toLowerCase().includes(q) ||
+      v.lineas.some(function(l){ return catNombres[l.cat].toLowerCase().includes(q); }) ||
+      (v.ventaPor || '').toLowerCase().includes(q);
+  });
+
+  var el = document.getElementById('listaHistorial');
+  if (!h.length) {
+    el.innerHTML = '<div class="sin-historial">Sin ventas registradas</div>';
+    return;
+  }
+
+  el.innerHTML = h.map(function(v) {
+    var detalle = v.lineas.map(function(l){
+      return l.gr + ' | ' + catNombres[l.cat] + ' ' + (emojis[l.cat] || '');
+    }).join(' · ');
+    if (v.insumos && v.insumos.length) {
+      detalle += ' · ' + v.insumos.map(function(i){ return fmt(i.costo) + ' ' + i.desc; }).join(' · ');
+    }
+    return '<div class="hventa">' +
+      '<div class="hventa-top">' +
+        '<div class="hventa-nombre">' + v.cliente + '</div>' +
+        '<div class="hventa-fecha">' + v.fecha + ' · ' + v.hora + '</div>' +
+      '</div>' +
+      '<div class="hventa-meta">Venta por <strong>' + v.ventaPor + '</strong> · Pago a <strong>' + v.pagoa + '</strong></div>' +
+      '<div class="hventa-detalle">' + (detalle || '—') + '</div>' +
+      '<div class="hventa-total">CLP ' + fmt(v.totalVenta) + '</div>' +
+      '<div class="hventa-dist">Diego <span>' + fmt(Math.max(0,v.diego)) + '</span> · Valentina <span>' + fmt(Math.max(0,v.vale)) + '</span></div>' +
+      '<div class="hventa-acc">' +
+        '<button class="hbtn" onclick="copiarMsgHistorial(' + v.id + ')" title="Copiar mensaje">📋</button>' +
+        '<button class="hbtn danger" onclick="eliminarVenta(' + v.id + ')" title="Eliminar">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function copiarMsgHistorial(id) {
+  var h = cargarHistorial();
+  var v = h.find(function(x){ return x.id === id; });
+  if (!v) return;
+  navigator.clipboard.writeText(v.mensaje)
+    .then(function(){ mostrarToast('¡Mensaje copiado!'); })
+    .catch(function(){ mostrarToast('No se pudo copiar'); });
+}
 
 // ─── Init ─────────────────────────────────────────────
 renderInsumos();
