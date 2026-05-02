@@ -358,12 +358,11 @@ function htmlVenta(){
       '<div class="dist-g"><div class="dist-c"><div class="dist-p">40%</div><div class="dist-n">Diego</div></div>'+
       '<div class="dist-c"><div class="dist-p">60%</div><div class="dist-n">Valentina</div></div></div></div>'+
     '<div class="res-card"><div class="res-t">✦ Resumen de la Venta</div>'+
-      '<div class="res-fila"><span class="rl">Costo oro / insumos</span><span class="rv gold" id="rC">$0</span></div>'+
-      '<div class="res-fila"><span class="rl">Costo operacional</span><span class="rv">−$1.000</span></div>'+
       '<div class="res-fila"><span class="rl">Total venta</span><span class="rv grande" id="rV">$0</span></div>'+
-      '<div class="res-fila"><span class="rl">Utilidad bruta</span><span class="rv verde" id="rU">$0</span></div>'+
+      '<div class="res-fila"><span class="rl">Costo</span><span class="rv gold" id="rC">$0</span></div>'+
+      '<div class="res-fila"><span class="rl">Utilidad</span><span class="rv verde" id="rU">$0</span></div>'+
       '<div class="res-fila"><span class="rl">Diego (40%)</span><span class="rv gold" id="rD">$0</span></div>'+
-      '<div class="res-fila"><span class="rl">Valentina (60%)</span><span class="rv" id="rVl">$0</span></div></div>'+
+      '<div class="res-fila"><span class="rl">Vale (60%)</span><span class="rv" id="rVl">$0</span></div></div>'+
     '<div class="sec"><div class="sec-t">Mensaje para Copiar</div><div class="msg" id="mBox">—</div></div>'+
     '<div><button class="btn-p" onclick="guardarVenta()">💾 Guardar Venta</button>'+
       '<button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>'+
@@ -425,8 +424,8 @@ function calcular(){
   var totalC=costoOro+costoIns+1000;
   var venta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
   var util=venta-totalC,diego=util*0.40,vale=util*0.60;
-  var rc=document.getElementById('rC');if(rc)rc.textContent=fmt(costoOro+costoIns);
   var rv=document.getElementById('rV');if(rv)rv.textContent=fmt(venta);
+  var rc=document.getElementById('rC');if(rc)rc.textContent=fmt(totalC);
   var ru=document.getElementById('rU');if(ru){ru.textContent=(util>=0?'':'−')+fmt(Math.abs(util));ru.style.color=util>=0?'var(--ok)':'var(--er)';}
   var rd=document.getElementById('rD');if(rd)rd.textContent=fmt(Math.max(0,diego));
   var rvl=document.getElementById('rVl');if(rvl)rvl.textContent=fmt(Math.max(0,vale));
