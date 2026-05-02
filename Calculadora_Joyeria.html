@@ -574,13 +574,14 @@ function descargarExcel(){
   var filas=lista.map(function(v){
     var gr={Cadena:0,Micro:0,Italy:0,GF18K:0};
     (v.lineas||[]).forEach(function(l){if(gr[l.cat]!==undefined)gr[l.cat]=l.gr;});
+    function nc(n){return String(n||0).replace('.',',');}
     return [
       v.fecha||'', v.hora||'', v.cliente||'', v.pagoa||'',
-      gr.Cadena, gr.Micro, gr.Italy, gr.GF18K,
+      nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K),
       (v.insumos||[]).map(function(i){return i.desc;}).join(' | '),
-      (v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0),
-      v.totalVenta||0, v.utilidad||0,
-      Math.max(0,v.diego||0), Math.max(0,v.vale||0),
+      nc((v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0)),
+      nc(v.totalVenta||0), nc(v.utilidad||0),
+      nc(Math.max(0,v.diego||0)), nc(Math.max(0,v.vale||0)),
       v.userName||''
     ];
   });
