@@ -10,7 +10,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Calculadora · Amira Store</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600&family=Fraunces:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 [data-theme="aravena"]{--bg:#05060a;--sf:#0f131c;--sf2:#141924;--sf3:#1e2636;--bd:#1e2636;--bd2:#2a3448;--tx:#eaf1fb;--mu:#6b7a93;--ac:#5b9fd6;--acl:#8ec5ec;--acd:#0a2540;--ok:#5aad7f;--er:#e07a7a;--hf:'Montserrat',sans-serif;--bf:'Montserrat',sans-serif}
 [data-theme="galaxia"]{--bg:#1a1128;--sf:#221840;--sf2:#2b1e3e;--sf3:#352550;--bd:#3d2f58;--bd2:#4a3a68;--tx:#e6e6fa;--mu:#a490c2;--ac:#a490c2;--acl:#c8b8e0;--acd:#7a6090;--ok:#6abf8a;--er:#e05a5a;--hf:'Cormorant Garamond',serif;--bf:'DM Sans',sans-serif}
@@ -548,8 +547,8 @@ function descargarExcel(){
   var cols=['Fecha','Hora','Cliente','Venta Por','Pago a',
     'Cadena (gr)','Precio Cadena','Micro (gr)','Precio Micro',
     'Italy (gr)','GF 18K (gr)','Precio GF 18K',
-    'Insumos','Costo Insumos ($)',
-    'Total Venta ($)','Utilidad ($)','Diego 40% ($)','Valentina 60% ($)','Registrado por'];
+    'Insumos','Costo Insumos','Total Venta','Utilidad',
+    'Diego 40%','Valentina 60%','Registrado por'];
   var filas=ventas.map(function(v){
     var gr={Cadena:{g:0,p:0},Micro:{g:0,p:0},Italy:{g:0,p:0},GF18K:{g:0,p:0}};
     (v.lineas||[]).forEach(function(l){if(gr[l.cat])gr[l.cat]={g:l.gr,p:l.pgr};});
@@ -564,16 +563,20 @@ function descargarExcel(){
       v.userName||''
     ];
   });
-  var ws=XLSX.utils.aoa_to_sheet([cols].concat(filas));
-  var wscols=[{wch:10},{wch:8},{wch:18},{wch:12},{wch:10},
-    {wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:10},{wch:12},
-    {wch:30},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:16}];
-  ws['!cols']=wscols;
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Ventas',ws);
+  function esc(val){
+    var s=String(val===null||val===undefined?'':val);
+    return (s.includes(';')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;
+  }
+  var csv='﻿'+cols.map(esc).join(';')+'\n';
+  filas.forEach(function(r){csv+=r.map(esc).join(';')+'\n';});
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
   var hoy=new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
-  XLSX.writeFile(wb,'AmiraStore_Ventas_'+hoy+'.xlsx');
-  toast('✓ Excel descargado');
+  a.href=url;a.download='AmiraStore_Ventas_'+hoy+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+  toast('✓ Archivo descargado');
 }
 
 function setRepPer(p){repPer=p;renderRep();}
