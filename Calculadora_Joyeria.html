@@ -10,6 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Calculadora · Amira Store</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600&family=Fraunces:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 [data-theme="aravena"]{--bg:#05060a;--sf:#0f131c;--sf2:#141924;--sf3:#1e2636;--bd:#1e2636;--bd2:#2a3448;--tx:#eaf1fb;--mu:#6b7a93;--ac:#5b9fd6;--acl:#8ec5ec;--acd:#0a2540;--ok:#5aad7f;--er:#e07a7a;--hf:'Montserrat',sans-serif;--bf:'Montserrat',sans-serif}
 [data-theme="galaxia"]{--bg:#1a1128;--sf:#221840;--sf2:#2b1e3e;--sf3:#352550;--bd:#3d2f58;--bd2:#4a3a68;--tx:#e6e6fa;--mu:#a490c2;--ac:#a490c2;--acl:#c8b8e0;--acd:#7a6090;--ok:#6abf8a;--er:#e05a5a;--hf:'Cormorant Garamond',serif;--bf:'DM Sans',sans-serif}
@@ -174,17 +175,9 @@ select option{background:var(--sf2);color:var(--tx)}
 .spinner-txt{font-size:11px;color:var(--mu);letter-spacing:.2em;text-transform:uppercase}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ac);color:var(--bg);font-weight:700;font-size:14px;padding:12px 24px;border-radius:40px;z-index:9999;transition:transform .3s ease;white-space:nowrap;pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0)}
-.hrep-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px}
-.hrep-blk{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
-.hrep-t{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-.hrep-big{font-size:14px;font-weight:700}
-.hrep-group{margin-bottom:10px}
-.hrep-gt{font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;font-weight:700;display:flex;align-items:center;gap:5px}
-.hrep-gt::after{content:'';flex:1;height:1px;background:var(--bd)}
-.hrep-fila{display:flex;justify-content:space-between;align-items:center;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:7px 10px;margin-bottom:4px;font-size:13px}
-.hrep-lbl{color:var(--mu)}
-.hrep-val{color:var(--tx);font-weight:500;text-align:right}
 .hrep-none{color:var(--mu);font-size:12px;padding:4px 2px;font-style:italic}
+.btn-excel{width:100%;background:transparent;border:1.5px solid var(--ok);border-radius:10px;color:var(--ok);font-family:var(--bf);font-size:14px;font-weight:600;padding:13px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.btn-excel:hover{background:var(--ok);color:var(--bg)}
 .per-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
 .per-tab{background:var(--sf2);border:1.5px solid var(--bd2);border-radius:10px;color:var(--mu);font-family:var(--bf);font-size:12px;font-weight:600;padding:10px 4px;cursor:pointer;transition:all .2s;text-align:center}
 .per-tab.activo{background:var(--ac);border-color:var(--ac);color:var(--bg)}
@@ -517,44 +510,70 @@ function renderH(){
   var el=document.getElementById('sHistorial');if(!el)return;
   var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
   var h=ventas;
-  var td=0,tv=0,tv2=0;h.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;tv2+=v.totalVenta||0;});
-  if(q)h=h.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q)||(v.pagoa||'').toLowerCase().includes(q);});
+  var td=0,tv=0;h.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;});
+  if(q)h=h.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);});
   el.innerHTML=
     '<div class="htotal-resumen">'+
       '<div class="htotal-item"><div class="val">'+ventas.length+'</div><div class="lbl">Ventas</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,td))+'</div><div class="lbl">Diego</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,tv))+'</div><div class="lbl">Valentina</div></div>'+
     '</div>'+
+    '<button class="btn-excel" onclick="descargarExcel()">📥 Descargar todos los datos en Excel</button>'+
     '<div class="search-wrap"><span class="search-ico">🔍</span>'+
-      '<input class="search-box" type="text" id="hBus" placeholder="Buscar cliente, canal, pago..." value="'+q+'" oninput="renderH()">'+
+      '<input class="search-box" type="text" id="hBus" placeholder="Buscar por cliente o usuario..." value="'+q+'" oninput="renderH()">'+
     '</div>'+
     (h.length===0?'<div class="sin-historial">Sin ventas registradas</div>':
       h.map(function(v){
-        var gramsHtml=(v.lineas&&v.lineas.length)?v.lineas.map(function(l){
-          return '<div class="hrep-fila"><span class="hrep-lbl">'+(EE[l.cat]||'')+' '+(EN[l.cat]||l.cat)+'</span><span class="hrep-val">'+l.gr+' gr · '+fmt(l.pgr)+'/gr = '+fmt(l.gr*l.pgr)+'</span></div>';
-        }).join(''):'<div class="hrep-none">Sin gramos registrados</div>';
-        var insHtml=(v.insumos&&v.insumos.length)?v.insumos.map(function(i){
-          return '<div class="hrep-fila"><span class="hrep-lbl">'+i.desc+'</span><span class="hrep-val">'+fmt(i.costo)+'</span></div>';
-        }).join(''):'<div class="hrep-none">Sin insumos</div>';
+        var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
+        if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
         return '<div class="hventa">'+
           '<div class="hventa-top"><div class="hventa-nombre">'+(v.cliente||'—')+'</div><div class="hventa-fecha">'+(v.fecha||'')+' · '+(v.hora||'')+'</div></div>'+
           '<div class="hventa-user">👤 '+(v.userName||'—')+'</div>'+
-          '<div class="hrep-row2">'+
-            '<div class="hrep-blk"><div class="hrep-t">Venta por</div><div class="hrep-big">'+(v.ventaPor||'—')+'</div></div>'+
-            '<div class="hrep-blk"><div class="hrep-t">Pago a</div><div class="hrep-big" style="color:var(--ac)">'+(v.pagoa||'—')+'</div></div>'+
-          '</div>'+
-          '<div class="hrep-group"><div class="hrep-gt">🥇 Gramos</div>'+gramsHtml+'</div>'+
-          '<div class="hrep-group"><div class="hrep-gt">💎 Insumos</div>'+insHtml+'</div>'+
+          '<div class="hventa-meta">Venta por <strong>'+(v.ventaPor||'—')+'</strong> · Pago a <strong>'+(v.pagoa||'—')+'</strong></div>'+
+          '<div class="hventa-detalle">'+(det||'—')+'</div>'+
           '<div class="hventa-bottom">'+
-            '<div><div class="hventa-clp">Total venta CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
+            '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
             '<div class="hventa-acc">'+
-              '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar mensaje">💬</button>'+
+              '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
               '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
             '</div>'+
           '</div>'+
         '</div>';
       }).join('')
     );
+}
+
+function descargarExcel(){
+  if(!ventas.length){toast('Sin datos para exportar');return;}
+  var cols=['Fecha','Hora','Cliente','Venta Por','Pago a',
+    'Cadena (gr)','Precio Cadena','Micro (gr)','Precio Micro',
+    'Italy (gr)','GF 18K (gr)','Precio GF 18K',
+    'Insumos','Costo Insumos ($)',
+    'Total Venta ($)','Utilidad ($)','Diego 40% ($)','Valentina 60% ($)','Registrado por'];
+  var filas=ventas.map(function(v){
+    var gr={Cadena:{g:0,p:0},Micro:{g:0,p:0},Italy:{g:0,p:0},GF18K:{g:0,p:0}};
+    (v.lineas||[]).forEach(function(l){if(gr[l.cat])gr[l.cat]={g:l.gr,p:l.pgr};});
+    return [
+      v.fecha||'', v.hora||'', v.cliente||'', v.ventaPor||'', v.pagoa||'',
+      gr.Cadena.g, gr.Cadena.p, gr.Micro.g, gr.Micro.p,
+      gr.Italy.g, gr.GF18K.g, gr.GF18K.p,
+      (v.insumos||[]).map(function(i){return i.desc;}).join(' | '),
+      (v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0),
+      v.totalVenta||0, v.utilidad||0,
+      Math.max(0,v.diego||0), Math.max(0,v.vale||0),
+      v.userName||''
+    ];
+  });
+  var ws=XLSX.utils.aoa_to_sheet([cols].concat(filas));
+  var wscols=[{wch:10},{wch:8},{wch:18},{wch:12},{wch:10},
+    {wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:10},{wch:12},
+    {wch:30},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:16}];
+  ws['!cols']=wscols;
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Ventas',ws);
+  var hoy=new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
+  XLSX.writeFile(wb,'AmiraStore_Ventas_'+hoy+'.xlsx');
+  toast('✓ Excel descargado');
 }
 
 function setRepPer(p){repPer=p;renderRep();}
