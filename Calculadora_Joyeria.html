@@ -545,17 +545,15 @@ function renderH(){
 function descargarExcel(){
   if(!ventas.length){toast('Sin datos para exportar');return;}
   var cols=['Fecha','Hora','Cliente','Venta Por','Pago a',
-    'Cadena (gr)','Precio Cadena','Micro (gr)','Precio Micro',
-    'Italy (gr)','GF 18K (gr)','Precio GF 18K',
+    'Cadena (gr)','Micro (gr)','Italy (gr)','GF 18K (gr)',
     'Insumos','Costo Insumos','Total Venta','Utilidad',
     'Diego 40%','Valentina 60%','Registrado por'];
   var filas=ventas.map(function(v){
-    var gr={Cadena:{g:0,p:0},Micro:{g:0,p:0},Italy:{g:0,p:0},GF18K:{g:0,p:0}};
-    (v.lineas||[]).forEach(function(l){if(gr[l.cat])gr[l.cat]={g:l.gr,p:l.pgr};});
+    var gr={Cadena:0,Micro:0,Italy:0,GF18K:0};
+    (v.lineas||[]).forEach(function(l){if(gr[l.cat]!==undefined)gr[l.cat]=l.gr;});
     return [
       v.fecha||'', v.hora||'', v.cliente||'', v.ventaPor||'', v.pagoa||'',
-      gr.Cadena.g, gr.Cadena.p, gr.Micro.g, gr.Micro.p,
-      gr.Italy.g, gr.GF18K.g, gr.GF18K.p,
+      gr.Cadena, gr.Micro, gr.Italy, gr.GF18K,
       (v.insumos||[]).map(function(i){return i.desc;}).join(' | '),
       (v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0),
       v.totalVenta||0, v.utilidad||0,
