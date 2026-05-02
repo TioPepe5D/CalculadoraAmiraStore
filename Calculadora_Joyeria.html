@@ -328,7 +328,6 @@ function restTema(){
 function htmlVenta(){
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
     '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Web</option></select></div>'+
-    '<div class="campo"><label>Pago a</label><select id="vPago"><option>Diego</option><option>Valentina</option></select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
     '<div class="campo"><label>Total de Venta ($)</label><input type="number" id="vTotal" placeholder="Ej: 45890" min="0"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
@@ -346,10 +345,6 @@ function htmlVenta(){
     '<div class="sec"><div class="sec-t">Distribución de Utilidades</div>'+
       '<div class="dist-g"><div class="dist-c"><div class="dist-p">40%</div><div class="dist-n">Diego</div></div>'+
       '<div class="dist-c"><div class="dist-p">60%</div><div class="dist-n">Valentina</div></div></div></div>'+
-    '<div class="sec"><div class="sec-t">Comprobante de Transferencia</div>'+
-      '<div class="upload" id="uZone"><input type="file" id="fInput" accept="image/*" onchange="handleFile(this)">'+
-      '<div class="upload-ico">📎</div><div class="upload-txt">Toca para subir imagen del comprobante</div></div>'+
-      '<img id="prevImg" class="preview" alt="Comprobante"></div>'+
     '<div class="res-card"><div class="res-t">✦ Resumen de la Venta</div>'+
       '<div class="res-fila"><span class="rl">Costo oro / insumos</span><span class="rv gold" id="rC">$0</span></div>'+
       '<div class="res-fila"><span class="rl">Costo operacional</span><span class="rv">−$1.000</span></div>'+
@@ -360,7 +355,6 @@ function htmlVenta(){
     '<div class="sec"><div class="sec-t">Mensaje para Copiar</div><div class="msg" id="mBox">—</div></div>'+
     '<div><button class="btn-p" onclick="guardarVenta()">💾 Guardar Venta</button>'+
       '<button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>'+
-      '<button class="btn-s" onclick="copiarConImg()">📤 Compartir Mensaje + Imagen</button>'+
       '<button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button></div>';
 }
 
@@ -425,9 +419,8 @@ function calcular(){
   var rd=document.getElementById('rD');if(rd)rd.textContent=fmt(Math.max(0,diego));
   var rvl=document.getElementById('rVl');if(rvl)rvl.textContent=fmt(Math.max(0,vale));
   var por=(document.getElementById('vPor')||{}).value||'';
-  var pago=(document.getElementById('vPago')||{}).value||'';
   var cli=((document.getElementById('vCliente')||{}).value||'').trim()||'—';
-  var msg='Venta Por '+por+'\nPago a '+pago+'\nNombre: '+cli+'\n\n';
+  var msg='Venta Por '+por+'\nNombre: '+cli+'\n\n';
   lineas.forEach(function(l){msg+=l.gr+' | '+EN[l.cat]+' '+(EE[l.cat]||'')+'\n';});
   ins.forEach(function(x){msg+=fmt(x.costo)+' | '+x.desc+' 💎\n';});
   if(venta>0)msg+='\nVenta: '+fmt(venta);
@@ -461,8 +454,6 @@ function limpiar(){
   var vp=document.getElementById('vPor');if(vp)vp.selectedIndex=0;
   var pa=document.getElementById('vPago');if(pa)pa.selectedIndex=0;
   ins=[];renderIns();
-  var pi=document.getElementById('prevImg');if(pi)pi.style.display='none';
-  var ut=document.querySelector('#uZone .upload-txt');if(ut)ut.textContent='Toca para subir imagen del comprobante';
   imgUrl=null;calcular();
 }
 
@@ -487,7 +478,6 @@ function guardarVenta(){
     hora:ahora.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
     cliente:cliente,
     ventaPor:(document.getElementById('vPor')||{}).value||'',
-    pagoa:(document.getElementById('vPago')||{}).value||'',
     lineas:lineas,insumos:ins.slice(),
     totalVenta:venta,utilidad:util,diego:util*0.40,vale:util*0.60,
     mensaje:(document.getElementById('mBox')||{}).textContent||'',
