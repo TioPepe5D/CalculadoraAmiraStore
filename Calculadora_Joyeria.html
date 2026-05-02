@@ -504,54 +504,56 @@ function setHMes(m){hMes=m;renderH();}
 
 function renderH(){
   var el=document.getElementById('sHistorial');if(!el)return;
-  var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
-
-  // Construir opciones de mes únicas desde los datos
+  // Construir opciones de mes
   var mesesMap={};
   ventas.forEach(function(v){if(v.at){var k=mesKey(v.at);if(!mesesMap[k])mesesMap[k]=mesLbl(v.at);}});
   var mesesOrden=Object.keys(mesesMap).sort().reverse();
   var mesOpts='<option value="todos">📅 Todos los meses</option>'+
     mesesOrden.map(function(k){return '<option value="'+k+'"'+(hMes===k?' selected':'')+'>'+mesesMap[k]+'</option>';}).join('');
 
-  // Filtrar por mes
-  var hBase=hMes==='todos'?ventas:ventas.filter(function(v){return v.at&&mesKey(v.at)===hMes;});
-  // Filtrar por búsqueda
-  var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q)||(v.pagoa||'').toLowerCase().includes(q);}):hBase;
-
-  var td=0,tv=0,tTotal=0;
-  hBase.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;tTotal+=v.totalVenta||0;});
-
   el.innerHTML=
     '<div class="mes-lbl">Filtrar por mes</div>'+
     '<select class="mes-select" onchange="setHMes(this.value)">'+mesOpts+'</select>'+
+    '<div id="hResumen"></div>'+
+    '<button class="btn-excel" id="btnExcel" onclick="descargarExcel()">📥 Descargar '+(hMes==='todos'?'todos los datos':'este mes')+' en Excel</button>'+
+    '<div class="search-wrap"><span class="search-ico">🔍</span>'+
+      '<input class="search-box" type="text" id="hBus" placeholder="Buscar por cliente o usuario..." oninput="renderHLista()">'+
+    '</div>'+
+    '<div id="hLista"></div>';
+  renderHLista();
+}
+
+function renderHLista(){
+  var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
+  var hBase=hMes==='todos'?ventas:ventas.filter(function(v){return v.at&&mesKey(v.at)===hMes;});
+  var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
+  var td=0,tv=0;hBase.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;});
+  var res=document.getElementById('hResumen');
+  if(res)res.innerHTML=
     '<div class="htotal-resumen">'+
       '<div class="htotal-item"><div class="val">'+hBase.length+'</div><div class="lbl">Ventas</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,td))+'</div><div class="lbl">Diego</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,tv))+'</div><div class="lbl">Valentina</div></div>'+
-    '</div>'+
-    '<button class="btn-excel" onclick="descargarExcel()">📥 Descargar '+(hMes==='todos'?'todos los datos':'este mes')+' en Excel</button>'+
-    '<div class="search-wrap"><span class="search-ico">🔍</span>'+
-      '<input class="search-box" type="text" id="hBus" placeholder="Buscar por cliente o usuario..." value="'+q+'" oninput="renderH()">'+
-    '</div>'+
-    (h.length===0?'<div class="sin-historial">Sin ventas'+(hMes!=='todos'?' en este mes':' registradas')+'</div>':
-      h.map(function(v){
-        var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
-        if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
-        return '<div class="hventa">'+
-          '<div class="hventa-top"><div class="hventa-nombre">'+(v.cliente||'—')+'</div><div class="hventa-fecha">'+(v.fecha||'')+' · '+(v.hora||'')+'</div></div>'+
-          '<div class="hventa-user">👤 '+(v.userName||'—')+'</div>'+
-          '<div class="hventa-meta">Venta por <strong>'+(v.ventaPor||'—')+'</strong> · Pago a <strong>'+(v.pagoa||'—')+'</strong></div>'+
-          '<div class="hventa-detalle">'+(det||'—')+'</div>'+
-          '<div class="hventa-bottom">'+
-            '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
-            '<div class="hventa-acc">'+
-              '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
-              '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
-            '</div>'+
+    '</div>';
+  var lista=document.getElementById('hLista');if(!lista)return;
+  lista.innerHTML=h.length===0?'<div class="sin-historial">Sin ventas'+(hMes!=='todos'?' en este mes':' registradas')+'</div>':
+    h.map(function(v){
+      var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
+      if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
+      return '<div class="hventa">'+
+        '<div class="hventa-top"><div class="hventa-nombre">'+(v.cliente||'—')+'</div><div class="hventa-fecha">'+(v.fecha||'')+' · '+(v.hora||'')+'</div></div>'+
+        '<div class="hventa-user">👤 '+(v.userName||'—')+'</div>'+
+        '<div class="hventa-meta">Venta por <strong>'+(v.ventaPor||'—')+'</strong></div>'+
+        '<div class="hventa-detalle">'+(det||'—')+'</div>'+
+        '<div class="hventa-bottom">'+
+          '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
+          '<div class="hventa-acc">'+
+            '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
+            '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
           '</div>'+
-        '</div>';
-      }).join('')
-    );
+        '</div>'+
+      '</div>';
+    }).join('');
 }
 
 function descargarExcel(){
