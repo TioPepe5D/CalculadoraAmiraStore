@@ -174,6 +174,12 @@ select option{background:var(--sf2);color:var(--tx)}
 .spinner-txt{font-size:11px;color:var(--mu);letter-spacing:.2em;text-transform:uppercase}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ac);color:var(--bg);font-weight:700;font-size:14px;padding:12px 24px;border-radius:40px;z-index:9999;transition:transform .3s ease;white-space:nowrap;pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0)}
+.toast-ok{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;pointer-events:none;opacity:0;transition:opacity .25s}
+.toast-ok.show{opacity:1}
+.toast-ok-box{background:var(--ok);color:#fff;border-radius:20px;padding:28px 36px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);transform:scale(.85);transition:transform .25s}
+.toast-ok.show .toast-ok-box{transform:scale(1)}
+.toast-ok-ico{font-size:48px;line-height:1;margin-bottom:10px}
+.toast-ok-txt{font-size:18px;font-weight:800;letter-spacing:.3px}
 .hrep-none{color:var(--mu);font-size:12px;padding:4px 2px;font-style:italic}
 .btn-excel{width:100%;background:transparent;border:1.5px solid var(--ok);border-radius:10px;color:var(--ok);font-family:var(--bf);font-size:14px;font-weight:600;padding:13px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
 .btn-excel:hover{background:var(--ok);color:var(--bg)}
@@ -226,6 +232,12 @@ window.__FB = {
 
 <div id="R"></div>
 <div class="toast" id="toast"></div>
+<div class="toast-ok" id="toastOk">
+  <div class="toast-ok-box">
+    <div class="toast-ok-ico">✅</div>
+    <div class="toast-ok-txt" id="toastOkTxt">Venta guardada</div>
+  </div>
+</div>
 
 <script>
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
@@ -441,8 +453,7 @@ function copiarConImg(){
   }).catch(function(){copiarMsg();});
 }
 
-function limpiar(){
-  if(!confirm('¿Limpiar todos los datos?'))return;
+function _resetForm(){
   document.querySelectorAll('input[type="number"],input[type="text"]').forEach(function(el){el.value='';});
   var def={Cadena:450,Micro:650,Italy:2000,GF18K:1400};
   Object.keys(def).forEach(function(cat){
@@ -452,10 +463,9 @@ function limpiar(){
     var pel=document.getElementById('p-'+cat);if(pel)pel.textContent='$'+def[cat].toLocaleString('es-CL')+'/gr';
   });
   var vp=document.getElementById('vPor');if(vp)vp.selectedIndex=0;
-  var pa=document.getElementById('vPago');if(pa)pa.selectedIndex=0;
-  ins=[];renderIns();
-  imgUrl=null;calcular();
+  ins=[];renderIns();imgUrl=null;calcular();
 }
+function limpiar(){if(!confirm('¿Limpiar todos los datos?'))return;_resetForm();}
 
 function guardarVenta(){
   var venta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
@@ -483,7 +493,10 @@ function guardarVenta(){
     mensaje:(document.getElementById('mBox')||{}).textContent||'',
     userId:fbUser.uid,userName:nom,
   };
-  window.__FB.saveVenta(fbUser.uid,reg).then(function(){toast('✓ Venta guardada ☁️');}).catch(function(e){toast('Error: '+e.message);});
+  window.__FB.saveVenta(fbUser.uid,reg).then(function(){
+    _resetForm();
+    toastOk('✓ Venta guardada correctamente');
+  }).catch(function(e){toast('Error: '+e.message);});
 }
 
 function eliminarVenta(id){if(!confirm('¿Eliminar esta venta?'))return;window.__FB.deleteVenta(id).then(function(){toast('Eliminada');});}
@@ -700,6 +713,7 @@ function adCreate(){
 }
 
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
+function toastOk(msg){var o=document.getElementById('toastOk'),tx=document.getElementById('toastOkTxt');if(!o)return;tx.textContent=msg||'¡Guardado!';o.classList.add('show');setTimeout(function(){o.classList.remove('show');},2000);}
 
 (function wait(){
   if(!window.__FB){setTimeout(wait,100);return;}
