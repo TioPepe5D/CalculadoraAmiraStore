@@ -243,7 +243,7 @@ window.__FB = {
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
-var hMes='todos';
+var hMes='todos',hPer='todo';
 
 function R(){
   var r=document.getElementById('R');
@@ -513,22 +513,41 @@ function showTab(t){
 
 function mesKey(at){var d=new Date(at);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function mesLbl(at){return new Date(at).toLocaleDateString('es-CL',{month:'long',year:'numeric'});}
-function setHMes(m){hMes=m;renderH();}
+function setHMes(m){hMes=m;renderHLista();}
+function setHPer(p){hPer=p;renderH();}
+
+function hPerStart(per){
+  var d=new Date();
+  if(per==='hoy'){d.setHours(0,0,0,0);return d.getTime();}
+  if(per==='sem'){var day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);d=new Date(d.setDate(diff));d.setHours(0,0,0,0);return d.getTime();}
+  if(per==='ano'){return new Date(d.getFullYear(),0,1).getTime();}
+  return 0;
+}
+
+function hFiltrar(){
+  if(hPer==='mes') return hMes==='todos'?ventas:ventas.filter(function(v){return v.at&&mesKey(v.at)===hMes;});
+  if(hPer==='todo') return ventas;
+  var desde=hPerStart(hPer);
+  return ventas.filter(function(v){return(v.at||0)>=desde;});
+}
 
 function renderH(){
   var el=document.getElementById('sHistorial');if(!el)return;
-  // Construir opciones de mes
+  var periodos=[{k:'hoy',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'},{k:'todo',ico:'∞',lbl:'Todo'}];
+
   var mesesMap={};
   ventas.forEach(function(v){if(v.at){var k=mesKey(v.at);if(!mesesMap[k])mesesMap[k]=mesLbl(v.at);}});
   var mesesOrden=Object.keys(mesesMap).sort().reverse();
-  var mesOpts='<option value="todos">📅 Todos los meses</option>'+
+  var mesOpts='<option value="todos">Todos los meses</option>'+
     mesesOrden.map(function(k){return '<option value="'+k+'"'+(hMes===k?' selected':'')+'>'+mesesMap[k]+'</option>';}).join('');
 
   el.innerHTML=
-    '<div class="mes-lbl">Filtrar por mes</div>'+
-    '<select class="mes-select" onchange="setHMes(this.value)">'+mesOpts+'</select>'+
+    '<div class="per-tabs">'+
+      periodos.map(function(p){return '<button class="per-tab '+(hPer===p.k?'activo':'')+'" onclick="setHPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
+    '</div>'+
+    (hPer==='mes'?'<select class="mes-select" onchange="setHMes(this.value)">'+mesOpts+'</select>':'')+
     '<div id="hResumen"></div>'+
-    '<button class="btn-excel" id="btnExcel" onclick="descargarExcel()">📥 Descargar '+(hMes==='todos'?'todos los datos':'este mes')+' en Excel</button>'+
+    '<button class="btn-excel" onclick="descargarExcel()">📥 Descargar en Excel</button>'+
     '<div class="search-wrap"><span class="search-ico">🔍</span>'+
       '<input class="search-box" type="text" id="hBus" placeholder="Buscar por cliente o usuario..." oninput="renderHLista()">'+
     '</div>'+
@@ -538,7 +557,7 @@ function renderH(){
 
 function renderHLista(){
   var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
-  var hBase=hMes==='todos'?ventas:ventas.filter(function(v){return v.at&&mesKey(v.at)===hMes;});
+  var hBase=hFiltrar();
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
   var td=0,tv=0;hBase.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;});
   var res=document.getElementById('hResumen');
@@ -549,7 +568,8 @@ function renderHLista(){
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,tv))+'</div><div class="lbl">Valentina</div></div>'+
     '</div>';
   var lista=document.getElementById('hLista');if(!lista)return;
-  lista.innerHTML=h.length===0?'<div class="sin-historial">Sin ventas'+(hMes!=='todos'?' en este mes':' registradas')+'</div>':
+  var sinMsg={hoy:'hoy',sem:'esta semana',mes:'en este mes',ano:'este año',todo:''};
+  lista.innerHTML=h.length===0?'<div class="sin-historial">Sin ventas '+(sinMsg[hPer]||'')+'</div>':
     h.map(function(v){
       var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
       if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
@@ -570,7 +590,7 @@ function renderHLista(){
 }
 
 function descargarExcel(){
-  var lista=hMes==='todos'?ventas:ventas.filter(function(v){return v.at&&mesKey(v.at)===hMes;});
+  var lista=hFiltrar();
   if(!lista.length){toast('Sin datos para exportar');return;}
   var cols=['Fecha','Hora','Cliente','Pago a',
     'Cadena (gr)','Micro (gr)','Italy (gr)','GF 18K (gr)',
@@ -600,7 +620,7 @@ function descargarExcel(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   var hoy=new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
-  var sufijo=hMes==='todos'?hoy:hMes;
+  var sufijo=hPer==='mes'&&hMes!=='todos'?hMes:hPer==='todo'?hoy:hPer+'_'+hoy;
   a.href=url;a.download='AmiraStore_Ventas_'+sufijo+'.csv';
   document.body.appendChild(a);a.click();
   setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
