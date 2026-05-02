@@ -174,6 +174,24 @@ select option{background:var(--sf2);color:var(--tx)}
 .spinner-txt{font-size:11px;color:var(--mu);letter-spacing:.2em;text-transform:uppercase}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ac);color:var(--bg);font-weight:700;font-size:14px;padding:12px 24px;border-radius:40px;z-index:9999;transition:transform .3s ease;white-space:nowrap;pointer-events:none}
 .toast.show{transform:translateX(-50%) translateY(0)}
+.hrep-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px}
+.hrep-blk{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.hrep-t{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.hrep-big{font-size:14px;font-weight:700}
+.hrep-group{margin-bottom:10px}
+.hrep-gt{font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;font-weight:700;display:flex;align-items:center;gap:5px}
+.hrep-gt::after{content:'';flex:1;height:1px;background:var(--bd)}
+.hrep-fila{display:flex;justify-content:space-between;align-items:center;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:7px 10px;margin-bottom:4px;font-size:13px}
+.hrep-lbl{color:var(--mu)}
+.hrep-val{color:var(--tx);font-weight:500;text-align:right}
+.hrep-none{color:var(--mu);font-size:12px;padding:4px 2px;font-style:italic}
+.per-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
+.per-tab{background:var(--sf2);border:1.5px solid var(--bd2);border-radius:10px;color:var(--mu);font-family:var(--bf);font-size:12px;font-weight:600;padding:10px 4px;cursor:pointer;transition:all .2s;text-align:center}
+.per-tab.activo{background:var(--ac);border-color:var(--ac);color:var(--bg)}
+.rep-resumen{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.rep-mini{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center}
+.rep-mini .v{font-family:var(--hf);font-size:20px;font-weight:700;color:var(--ac)}
+.rep-mini .l{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
 </style>
 </head>
 <body data-theme="amira">
@@ -216,7 +234,7 @@ window.__FB = {
 <div class="toast" id="toast"></div>
 
 <script>
-var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u';
+var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
 
@@ -499,8 +517,8 @@ function renderH(){
   var el=document.getElementById('sHistorial');if(!el)return;
   var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
   var h=ventas;
-  var td=0,tv=0;h.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;});
-  if(q)h=h.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);});
+  var td=0,tv=0,tv2=0;h.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;tv2+=v.totalVenta||0;});
+  if(q)h=h.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q)||(v.pagoa||'').toLowerCase().includes(q);});
   el.innerHTML=
     '<div class="htotal-resumen">'+
       '<div class="htotal-item"><div class="val">'+ventas.length+'</div><div class="lbl">Ventas</div></div>'+
@@ -508,21 +526,29 @@ function renderH(){
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,tv))+'</div><div class="lbl">Valentina</div></div>'+
     '</div>'+
     '<div class="search-wrap"><span class="search-ico">🔍</span>'+
-      '<input class="search-box" type="text" id="hBus" placeholder="Buscar por cliente o usuario..." value="'+q+'" oninput="renderH()">'+
+      '<input class="search-box" type="text" id="hBus" placeholder="Buscar cliente, canal, pago..." value="'+q+'" oninput="renderH()">'+
     '</div>'+
     (h.length===0?'<div class="sin-historial">Sin ventas registradas</div>':
       h.map(function(v){
-        var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
-        if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
+        var gramsHtml=(v.lineas&&v.lineas.length)?v.lineas.map(function(l){
+          return '<div class="hrep-fila"><span class="hrep-lbl">'+(EE[l.cat]||'')+' '+(EN[l.cat]||l.cat)+'</span><span class="hrep-val">'+l.gr+' gr · '+fmt(l.pgr)+'/gr = '+fmt(l.gr*l.pgr)+'</span></div>';
+        }).join(''):'<div class="hrep-none">Sin gramos registrados</div>';
+        var insHtml=(v.insumos&&v.insumos.length)?v.insumos.map(function(i){
+          return '<div class="hrep-fila"><span class="hrep-lbl">'+i.desc+'</span><span class="hrep-val">'+fmt(i.costo)+'</span></div>';
+        }).join(''):'<div class="hrep-none">Sin insumos</div>';
         return '<div class="hventa">'+
           '<div class="hventa-top"><div class="hventa-nombre">'+(v.cliente||'—')+'</div><div class="hventa-fecha">'+(v.fecha||'')+' · '+(v.hora||'')+'</div></div>'+
           '<div class="hventa-user">👤 '+(v.userName||'—')+'</div>'+
-          '<div class="hventa-meta">Venta por <strong>'+(v.ventaPor||'—')+'</strong> · Pago a <strong>'+(v.pagoa||'—')+'</strong></div>'+
-          '<div class="hventa-detalle">'+(det||'—')+'</div>'+
+          '<div class="hrep-row2">'+
+            '<div class="hrep-blk"><div class="hrep-t">Venta por</div><div class="hrep-big">'+(v.ventaPor||'—')+'</div></div>'+
+            '<div class="hrep-blk"><div class="hrep-t">Pago a</div><div class="hrep-big" style="color:var(--ac)">'+(v.pagoa||'—')+'</div></div>'+
+          '</div>'+
+          '<div class="hrep-group"><div class="hrep-gt">🥇 Gramos</div>'+gramsHtml+'</div>'+
+          '<div class="hrep-group"><div class="hrep-gt">💎 Insumos</div>'+insHtml+'</div>'+
           '<div class="hventa-bottom">'+
-            '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
+            '<div><div class="hventa-clp">Total venta CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
             '<div class="hventa-acc">'+
-              '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
+              '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar mensaje">💬</button>'+
               '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
             '</div>'+
           '</div>'+
@@ -531,19 +557,50 @@ function renderH(){
     );
 }
 
+function setRepPer(p){repPer=p;renderRep();}
+
 function renderRep(){
   var el=document.getElementById('sReportes');if(!el)return;
-  var h=ventas,tV=0,tU=0,tD=0,tVl=0,pD=0,pV=0;
-  h.forEach(function(v){tV+=v.totalVenta||0;tU+=v.utilidad||0;tD+=v.diego||0;tVl+=v.vale||0;if((v.pagoa||'')==='Diego')pD+=v.totalVenta||0;if((v.pagoa||'')==='Valentina')pV+=v.totalVenta||0;});
+  function startOf(per){
+    var d=new Date();
+    if(per==='dia'){d.setHours(0,0,0,0);}
+    else if(per==='sem'){var day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);d=new Date(d.setDate(diff));d.setHours(0,0,0,0);}
+    else if(per==='mes'){d=new Date(d.getFullYear(),d.getMonth(),1);}
+    else{d=new Date(d.getFullYear(),0,1);}
+    return d.getTime();
+  }
+  function filtrar(per){var desde=startOf(per);return ventas.filter(function(v){return(v.at||0)>=desde;});}
+  function stats(h){
+    var tV=0,tU=0,tD=0,tVl=0,pD=0,pV=0;
+    h.forEach(function(v){
+      tV+=v.totalVenta||0;tU+=v.utilidad||0;tD+=v.diego||0;tVl+=v.vale||0;
+      if((v.pagoa||'')==='Diego')pD+=v.totalVenta||0;
+      if((v.pagoa||'')==='Valentina')pV+=v.totalVenta||0;
+    });
+    return {tV:tV,tU:tU,tD:tD,tVl:tVl,pD:pD,pV:pV,tC:Math.max(0,tV-tU),cnt:h.length};
+  }
+  var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'}];
+  var titulos={dia:'Hoy',sem:'Esta Semana',mes:'Este Mes',ano:'Este Año'};
+  var h=filtrar(repPer),s=stats(h);
   el.innerHTML=
-    '<div class="reporte-card"><div class="reporte-t">📊 Reporte General</div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val">'+fmt(tV)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Costo total</span><span class="reporte-val">'+fmt(Math.max(0,tV-tU))+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Cantidad de ventas</span><span class="reporte-val">'+h.length+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Pagos a Diego</span><span class="reporte-val">'+fmt(pD)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Pagos a Valentina</span><span class="reporte-val">'+fmt(pV)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad Diego (40%)</span><span class="reporte-val gold">'+fmt(Math.max(0,tD))+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad Valentina (60%)</span><span class="reporte-val gold">'+fmt(Math.max(0,tVl))+'</span></div>'+
+    '<div class="per-tabs">'+
+      periodos.map(function(p){return '<button class="per-tab '+(repPer===p.k?'activo':'')+'" onclick="setRepPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
+    '</div>'+
+    '<div class="rep-resumen">'+
+      '<div class="rep-mini"><div class="v">'+s.cnt+'</div><div class="l">Ventas</div></div>'+
+      '<div class="rep-mini"><div class="v">'+fmt(s.tV)+'</div><div class="l">Total Ventas</div></div>'+
+      '<div class="rep-mini"><div class="v">'+fmt(s.tC)+'</div><div class="l">Costos</div></div>'+
+      '<div class="rep-mini"><div class="v" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</div><div class="l">Utilidad</div></div>'+
+    '</div>'+
+    '<div class="reporte-card"><div class="reporte-t">📊 '+titulos[repPer]+'</div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val gold">'+fmt(s.tV)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Costo total (oro + insumos)</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
+      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Pagos a Diego</span><span class="reporte-val">'+fmt(s.pD)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Pagos a Valentina</span><span class="reporte-val">'+fmt(s.pV)+'</span></div>'+
+      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego (40%)</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad Valentina (60%)</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
+      (s.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px">Sin ventas en este período</div>':'')+
     '</div>';
 }
 
