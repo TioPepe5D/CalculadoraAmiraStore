@@ -544,7 +544,7 @@ function renderH(){
 
 function descargarExcel(){
   if(!ventas.length){toast('Sin datos para exportar');return;}
-  var cols=['Fecha','Hora','Cliente','Venta Por','Pago a',
+  var cols=['Fecha','Hora','Cliente','Pago a',
     'Cadena (gr)','Micro (gr)','Italy (gr)','GF 18K (gr)',
     'Insumos','Costo Insumos','Total Venta','Utilidad',
     'Diego 40%','Valentina 60%','Registrado por'];
@@ -552,7 +552,7 @@ function descargarExcel(){
     var gr={Cadena:0,Micro:0,Italy:0,GF18K:0};
     (v.lineas||[]).forEach(function(l){if(gr[l.cat]!==undefined)gr[l.cat]=l.gr;});
     return [
-      v.fecha||'', v.hora||'', v.cliente||'', v.ventaPor||'', v.pagoa||'',
+      v.fecha||'', v.hora||'', v.cliente||'', v.pagoa||'',
       gr.Cadena, gr.Micro, gr.Italy, gr.GF18K,
       (v.insumos||[]).map(function(i){return i.desc;}).join(' | '),
       (v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0),
