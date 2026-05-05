@@ -651,7 +651,7 @@ function descargarExcel(){
     function nc(n){return String(n||0).replace('.',',');}
     var costoIns=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
     var base=[v.fecha||'', v.hora||'', nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K), nc(costoIns), nc(v.totalVenta||0)];
-    return isAdm?[v.userName||''].concat(base).concat([nc(v.utilidad||0),nc(v.diego||0),nc(v.vale||0)]):base;
+    return isAdm?[v.userName||''].concat(base).concat([nc(v.utilidad||0),nc(v.diego||0),nc(v.vendedor!==undefined?v.vendedor:(v.vale||0))]):base;
   });
   function esc(val){
     var s=String(val===null||val===undefined?'':val);
