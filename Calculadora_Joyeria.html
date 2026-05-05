@@ -194,12 +194,12 @@ select option{background:var(--sf2);color:var(--tx)}
 .rep-mini .l{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
 </style>
 </head>
-<body data-theme="amira">
+<body data-theme="aravena">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyADmCGMP2owqLlhxq_B5yU8qkMNOE0pob0",
@@ -223,6 +223,7 @@ window.__FB = {
   saveVenta: async (uid,v) => { const c=JSON.parse(JSON.stringify(v,(k,x)=>x===undefined?null:x)); await setDoc(doc(db,"ventas",v.id),{...c,userId:uid,savedAt:Date.now()}); },
   deleteVenta: async (id) => deleteDoc(doc(db,"ventas",id)),
   listenVentas: (cb) => onSnapshot(query(collection(db,"ventas"),orderBy("at","desc")), s => cb(s.docs.map(d=>d.data()))),
+  listenMyVentas: (uid,cb) => onSnapshot(query(collection(db,"ventas"),where("userId","==",uid)), s => cb(s.docs.map(d=>d.data()).sort((a,b)=>(b.at||0)-(a.at||0)))),
   getUsers: async () => { const s=await getDocs(collection(db,"users")); return s.docs.map(d=>d.data()); },
   saveUser: async (uid,d) => setDoc(doc(db,"users",uid),d,{merge:true}),
   deleteUser: async (uid) => deleteDoc(doc(db,"users",uid)),
@@ -241,6 +242,10 @@ window.__FB = {
 
 <script>
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
+var hUser='';
+var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Jamin:{v:0.75,d:0.25},Jordan:{v:0.75,d:0.25},Diego:{v:1.00,d:0.00}};
+function matchDist(name){var k=Object.keys(DIST).find(function(k){return(name||'').toLowerCase().startsWith(k.toLowerCase());});return k?{key:k,pct:DIST[k]}:{key:name||'Vendedor',pct:{v:0.60,d:0.40}};}
+function getDist(){var nom=profile?profile.name:(fbUser?fbUser.email.split('@')[0]:'');return matchDist(nom);}
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
 var hPer='todo';
@@ -260,7 +265,7 @@ function renderLogin(){
   document.getElementById('R').innerHTML=
     '<div class="login-wrap">'+
     '<div class="login-card">'+
-    '<div class="login-logo"><h1>✦ Amira Store</h1><p>Registro interno de ventas</p></div>'+
+    '<div class="login-logo"><h1>✦ Ventas Personales</h1><p>Joyería Aravena</p></div>'+
     '<div class="login-err" id="lErr"></div>'+
     '<div class="campo"><label>Email</label><input type="email" id="lEmail" placeholder="tu@email.com" autocomplete="email"></div>'+
     '<div class="campo"><label>Contraseña</label><input type="password" id="lPwd" placeholder="••••••••" autocomplete="current-password"></div>'+
@@ -296,7 +301,7 @@ function renderApp(){
   var nom=profile?profile.name:fbUser.email.split('@')[0];
   document.getElementById('R').innerHTML=
     '<div class="tema-barra">'+
-      '<div class="tema-actual">🎨 Tema: <strong id="nTema">Amira Store</strong></div>'+
+      '<div class="tema-actual">🎨 Tema: <strong id="nTema">Joyería</strong></div>'+
       '<div style="display:flex;align-items:center;gap:8px">'+
         (isAdm?'<button class="btn-logout" onclick="openAdmin()">👥</button>':'')+
         '<button class="btn-tema" id="btnT" onclick="toggleCajon()">▾ Tema</button>'+
@@ -305,14 +310,14 @@ function renderApp(){
     '</div>'+
     '<div class="tema-cajon" id="tPanel">'+
       '<div class="tema-grid">'+
-        tBtn('aravena','✦','Joyería')+tBtn('galaxia','🌌','Galaxia')+tBtn('dorada','🍂','Dorada')+
-        tBtn('oceano','🌊','Océano')+tBtn('amira','🌹','Amira','activo')+tBtn('tecnologia','⚡','Tech')+
+        tBtn('aravena','✦','Joyería','activo')+tBtn('galaxia','🌌','Galaxia')+tBtn('dorada','🍂','Dorada')+
+        tBtn('oceano','🌊','Océano')+tBtn('amira','🌹','Amira')+tBtn('tecnologia','⚡','Tech')+
         tBtn('bosque','🌿','Bosque')+tBtn('artico','❄️','Ártico')+tBtn('atardecer','🌅','Atardecer')+
         tBtn('jardin','🌻','Jardín')+tBtn('minimal','◻','Minimal')+
       '</div>'+
     '</div>'+
     '<div class="wrap">'+
-      '<div class="header"><h1>Ventas <span>Amira Store</span></h1><p class="header-sub">👤 '+nom+(isAdm?' · Admin':'')+'</p></div>'+
+      '<div class="header"><h1>Ventas <span>Personales</span></h1><p style="font-size:11px;color:var(--mu);margin-top:2px;letter-spacing:1px;text-transform:uppercase">Joyería Aravena</p><p class="header-sub">👤 '+nom+(isAdm?' · Admin':'')+'</p></div>'+
       '<div class="tabs">'+
         '<button class="tab-btn activo" id="tabVenta"     onclick="showTab(\'venta\')">📝 Venta</button>'+
         '<button class="tab-btn"        id="tabHistorial" onclick="showTab(\'historial\')">🕒 Historial</button>'+
@@ -343,7 +348,7 @@ function restTema(){
 
 function htmlVenta(){
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
-    '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Web</option></select></div>'+
+    '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Web</option><option>Venta en oficina</option></select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
     '<div class="campo"><label>Total de Venta ($)</label><input type="number" id="vTotal" placeholder="Ej: 45890" min="0"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
@@ -358,15 +363,16 @@ function htmlVenta(){
       '<div><label>Costo ($)</label><input type="number" id="iCosto" placeholder="0" min="0"></div>'+
       '<button class="btn-add" onclick="addIns()">+ Agregar</button></div>'+
       '<p class="nota">Se descuenta $1.000 por costo operacional de cada venta.</p></div>'+
-    '<div class="sec"><div class="sec-t">Distribución de Utilidades</div>'+
-      '<div class="dist-g"><div class="dist-c"><div class="dist-p">40%</div><div class="dist-n">Diego</div></div>'+
-      '<div class="dist-c"><div class="dist-p">60%</div><div class="dist-n">Valentina</div></div></div></div>'+
+    (function(){var dist=getDist();var pV=Math.round(dist.pct.v*100),pD=Math.round(dist.pct.d*100);
+    return '<div class="sec"><div class="sec-t">Distribución de Utilidades</div>'+
+      '<div class="dist-g">'+(pD>0?'<div class="dist-c"><div class="dist-p">'+pD+'%</div><div class="dist-n">Diego</div></div>':'')+
+      '<div class="dist-c"><div class="dist-p">'+pV+'%</div><div class="dist-n">'+dist.key+'</div></div></div></div>'+
     '<div class="res-card"><div class="res-t">✦ Resumen de la Venta</div>'+
       '<div class="res-fila"><span class="rl">Total venta</span><span class="rv grande" id="rV">$0</span></div>'+
       '<div class="res-fila"><span class="rl">Costo</span><span class="rv gold" id="rC">$0</span></div>'+
       '<div class="res-fila"><span class="rl">Utilidad</span><span class="rv verde" id="rU">$0</span></div>'+
-      '<div class="res-fila"><span class="rl">Diego (40%)</span><span class="rv gold" id="rD">$0</span></div>'+
-      '<div class="res-fila"><span class="rl">Vale (60%)</span><span class="rv" id="rVl">$0</span></div></div>'+
+      (pD>0?'<div class="res-fila"><span class="rl">Diego ('+pD+'%)</span><span class="rv gold" id="rD">$0</span></div>':'')+
+      '<div class="res-fila"><span class="rl">'+dist.key+' ('+pV+'%)</span><span class="rv verde" id="rVl">$0</span></div></div>';})() +
     '<div class="sec"><div class="sec-t">Mensaje para Copiar</div><div class="msg" id="mBox">—</div></div>'+
     '<div><button class="btn-p" onclick="guardarVenta()">💾 Guardar Venta</button>'+
       '<button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>'+
@@ -384,7 +390,11 @@ function hCat(cat,emoji,nom,p1,p2){
 
 function startListener(){
   if(unsub){unsub();unsub=null;}
-  unsub=window.__FB.listenVentas(function(v){ventas=v;if(tab==='historial')renderH();if(tab==='reportes')renderRep();});
+  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var fn=isAdm
+    ?function(cb){return window.__FB.listenVentas(cb);}
+    :function(cb){return window.__FB.listenMyVentas(fbUser.uid,cb);};
+  unsub=fn(function(v){ventas=v;if(tab==='historial')renderH();if(tab==='reportes')renderRep();});
 }
 
 function setP(cat,val,btn){
@@ -427,15 +437,17 @@ function calcular(){
   var costoIns=ins.reduce(function(a,b){return a+b.costo;},0);
   var totalC=costoOro+costoIns+1000;
   var venta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
-  var util=venta-totalC,diego=util*0.40,vale=util*0.60;
+  var dist=getDist();
+  var util=venta-totalC,diego=util*dist.pct.d,vend=util*dist.pct.v;
   var rv=document.getElementById('rV');if(rv)rv.textContent=fmt(venta);
   var rc=document.getElementById('rC');if(rc)rc.textContent=fmt(totalC);
   var ru=document.getElementById('rU');if(ru){ru.textContent=(util>=0?'':'−')+fmt(Math.abs(util));ru.style.color=util>=0?'var(--ok)':'var(--er)';}
   var rd=document.getElementById('rD');if(rd)rd.textContent=fmt(Math.max(0,diego));
-  var rvl=document.getElementById('rVl');if(rvl)rvl.textContent=fmt(Math.max(0,vale));
+  var rvl=document.getElementById('rVl');if(rvl)rvl.textContent=fmt(Math.max(0,vend));
   var por=(document.getElementById('vPor')||{}).value||'';
   var cli=((document.getElementById('vCliente')||{}).value||'').trim()||'—';
-  var msg='Venta Por '+por+'\nNombre: '+cli+'\n\n';
+  var porLabel=por==='Venta en oficina'?'Venta Presencial':por;
+  var msg=(por==='Venta en oficina'?'Venta Presencial':'Venta Por '+porLabel)+'\nNombre: '+cli+'\n\n';
   lineas.forEach(function(l){msg+=l.gr+' | '+EN[l.cat]+' '+(EE[l.cat]||'')+'\n';});
   ins.forEach(function(x){msg+=fmt(x.costo)+' | '+x.desc+' 💎\n';});
   if(venta>0)msg+='\nVenta: '+fmt(venta);
@@ -483,6 +495,7 @@ function guardarVenta(){
   });
   var costoIns=ins.reduce(function(a,b){return a+b.costo;},0);
   var totalC=costoOro+costoIns+1000,util=venta-totalC;
+  var dist=getDist();
   var ahora=new Date();
   var nom=profile?profile.name:fbUser.email.split('@')[0];
   var reg={
@@ -492,7 +505,9 @@ function guardarVenta(){
     cliente:cliente,
     ventaPor:(document.getElementById('vPor')||{}).value||'',
     lineas:lineas,insumos:ins.slice(),
-    totalVenta:venta,utilidad:util,diego:util*0.40,vale:util*0.60,
+    totalVenta:venta,utilidad:util,
+    diego:util*dist.pct.d,vendedor:util*dist.pct.v,
+    pctDiego:dist.pct.d,pctVendedor:dist.pct.v,
     mensaje:(document.getElementById('mBox')||{}).textContent||'',
     userId:fbUser.uid,userName:nom,
   };
@@ -562,11 +577,19 @@ function renderH(){
     var opts=Object.keys(yrs).sort().reverse().map(function(y){return '<option value="'+y+'"'+(hAno===String(y)?' selected':'')+'>'+y+'</option>';}).join('');
     sub='<div class="mes-lbl">Seleccionar año</div><select class="mes-select" onchange="hAno=this.value;renderHLista()">'+opts+'</select>';
   }
+  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var memberFilter='';
+  if(isAdm){
+    var members={};ventas.forEach(function(v){if(v.userId&&v.userName)members[v.userId]=v.userName;});
+    var mOpts='<option value="">Todos los integrantes</option>'+Object.keys(members).map(function(uid){return '<option value="'+uid+'"'+(hUser===uid?' selected':'')+'>'+members[uid]+'</option>';}).join('');
+    memberFilter='<div class="mes-lbl">Integrante</div><select class="mes-select" onchange="hUser=this.value;renderHLista()">'+mOpts+'</select>';
+  }
   el.innerHTML=
     '<div class="per-tabs">'+
       periodos.map(function(p){return '<button class="per-tab '+(hPer===p.k?'activo':'')+'" onclick="setHPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
     '</div>'+
     sub+
+    memberFilter+
     '<div id="hResumen"></div>'+
     '<button class="btn-excel" onclick="descargarExcel()">📥 Descargar en Excel</button>'+
     '<div class="search-wrap"><span class="search-ico">🔍</span>'+
@@ -579,14 +602,17 @@ function renderH(){
 function renderHLista(){
   var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
   var hBase=hFiltrar();
+  if(hUser)hBase=hBase.filter(function(v){return v.userId===hUser;});
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
-  var td=0,tv=0;hBase.forEach(function(v){td+=v.diego||0;tv+=v.vale||0;});
+  var isAdmH=window.__FB.isAdmin(fbUser.email);
+  var td=0,tvend=0,ttv=0;
+  hBase.forEach(function(v){td+=v.diego||0;tvend+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));ttv+=v.totalVenta||0;});
   var res=document.getElementById('hResumen');
   if(res)res.innerHTML=
     '<div class="htotal-resumen">'+
       '<div class="htotal-item"><div class="val">'+hBase.length+'</div><div class="lbl">Ventas</div></div>'+
+      '<div class="htotal-item"><div class="val">'+fmt(ttv)+'</div><div class="lbl">Total</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,td))+'</div><div class="lbl">Diego</div></div>'+
-      '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,tv))+'</div><div class="lbl">Valentina</div></div>'+
     '</div>';
   var lista=document.getElementById('hLista');if(!lista)return;
   var sinMsg={hoy:'ese día',sem:'esa semana',mes:'ese mes',ano:'ese año',todo:''};
@@ -594,13 +620,14 @@ function renderHLista(){
     h.map(function(v){
       var det=(v.lineas||[]).map(function(l){return l.gr+'g '+(EN[l.cat]||l.cat)+' '+(EE[l.cat]||'');}).join(' · ');
       if(v.insumos&&v.insumos.length)det+=' · '+v.insumos.map(function(i){return i.desc+' 💎 '+fmt(i.costo);}).join(' · ');
+      var vPorLbl=(v.ventaPor||'')==='Venta en oficina'?'Venta Presencial':(v.ventaPor||'—');
       return '<div class="hventa">'+
         '<div class="hventa-top"><div class="hventa-nombre">'+(v.cliente||'—')+'</div><div class="hventa-fecha">'+(v.fecha||'')+' · '+(v.hora||'')+'</div></div>'+
         '<div class="hventa-user">👤 '+(v.userName||'—')+'</div>'+
-        '<div class="hventa-meta">Venta por <strong>'+(v.ventaPor||'—')+'</strong></div>'+
+        '<div class="hventa-meta">Venta por <strong>'+vPorLbl+'</strong></div>'+
         '<div class="hventa-detalle">'+(det||'—')+'</div>'+
         '<div class="hventa-bottom">'+
-          '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+(v.ventaPor||'')+'</div></div>'+
+          '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div><div class="hventa-badge">'+vPorLbl+'</div></div>'+
           '<div class="hventa-acc">'+
             '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
             '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
@@ -611,19 +638,20 @@ function renderHLista(){
 }
 
 function descargarExcel(){
+  var isAdm=window.__FB.isAdmin(fbUser.email);
   var lista=hFiltrar();
+  if(hUser)lista=lista.filter(function(v){return v.userId===hUser;});
   if(!lista.length){toast('Sin datos para exportar');return;}
-  var cols=['Fecha','Hora','Cadena (gr)','Micro (gr)','Italy (gr)','GF 18K (gr)','Insumos (Costo Total)','Total Venta ($)'];
+  var cols=isAdm
+    ?['Integrante','Fecha','Hora','Cadena','Micro','Italy','GF 18 K','Insumos: (Costo Total)','Total Venta: ($)','Utilidad','Diego','Mi Utilidad']
+    :['Fecha','Hora','Cadena','Micro','Italy','GF 18 K','Insumos: (Costo Total)','Total Venta: ($)'];
   var filas=lista.map(function(v){
     var gr={Cadena:0,Micro:0,Italy:0,GF18K:0};
     (v.lineas||[]).forEach(function(l){if(gr[l.cat]!==undefined)gr[l.cat]=l.gr;});
     function nc(n){return String(n||0).replace('.',',');}
     var costoIns=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
-    return [
-      v.fecha||'', v.hora||'',
-      nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K),
-      nc(costoIns), nc(v.totalVenta||0)
-    ];
+    var base=[v.fecha||'', v.hora||'', nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K), nc(costoIns), nc(v.totalVenta||0)];
+    return isAdm?[v.userName||''].concat(base).concat([nc(v.utilidad||0),nc(v.diego||0),nc(v.vale||0)]):base;
   });
   function esc(val){
     var s=String(val===null||val===undefined?'':val);
@@ -656,17 +684,45 @@ function renderRep(){
   }
   function filtrar(per){var desde=startOf(per);return ventas.filter(function(v){return(v.at||0)>=desde;});}
   function stats(h){
-    var tV=0,tU=0,tD=0,tVl=0,pD=0,pV=0;
+    var tV=0,tU=0,tD=0,tVl=0;
     h.forEach(function(v){
-      tV+=v.totalVenta||0;tU+=v.utilidad||0;tD+=v.diego||0;tVl+=v.vale||0;
-      if((v.pagoa||'')==='Diego')pD+=v.totalVenta||0;
-      if((v.pagoa||'')==='Valentina')pV+=v.totalVenta||0;
+      tV+=v.totalVenta||0;tU+=v.utilidad||0;tD+=v.diego||0;
+      tVl+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));
     });
-    return {tV:tV,tU:tU,tD:tD,tVl:tVl,pD:pD,pV:pV,tC:Math.max(0,tV-tU),cnt:h.length};
+    return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:Math.max(0,tV-tU),cnt:h.length};
   }
+  var isAdm=window.__FB.isAdmin(fbUser.email);
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'}];
   var titulos={dia:'Hoy',sem:'Esta Semana',mes:'Este Mes',ano:'Este Año'};
   var h=filtrar(repPer),s=stats(h);
+
+  var porIntegrante='';
+  if(isAdm){
+    var byU={};
+    h.forEach(function(v){
+      var uid=v.userId||'?';
+      if(!byU[uid])byU[uid]={name:v.userName||'?',cnt:0,tV:0,tU:0,tD:0,tVl:0};
+      byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=v.diego||0;byU[uid].tVl+=v.vale||0;
+    });
+    var rows=Object.values(byU).sort(function(a,b){return b.tV-a.tV;});
+    porIntegrante=rows.length===0?'':
+      '<div class="reporte-card" style="margin-top:12px"><div class="reporte-t">👥 Por Integrante · '+titulos[repPer]+'</div>'+
+      rows.map(function(u){
+        return '<div class="reporte-fila" style="flex-direction:column;align-items:flex-start;gap:4px">'+
+          '<div style="display:flex;justify-content:space-between;width:100%;align-items:center">'+
+            '<span style="font-weight:700;font-size:14px;color:var(--tx)">'+u.name+'</span>'+
+            '<span class="reporte-val gold">'+fmt(u.tV)+'</span>'+
+          '</div>'+
+          '<div style="display:flex;gap:12px;font-size:11px;color:var(--mu)">'+
+            '<span>'+u.cnt+' venta'+(u.cnt===1?'':'s')+'</span>'+
+            '<span>Utilidad: '+fmt(u.tU)+'</span>'+
+            '<span>Diego: '+fmt(u.tD)+'</span>'+
+          '</div>'+
+        '</div>';
+      }).join('')+
+      '</div>';
+  }
+
   el.innerHTML=
     '<div class="per-tabs">'+
       periodos.map(function(p){return '<button class="per-tab '+(repPer===p.k?'activo':'')+'" onclick="setRepPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
@@ -681,12 +737,11 @@ function renderRep(){
       '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val gold">'+fmt(s.tV)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Costo total (oro + insumos)</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
-      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Pagos a Diego</span><span class="reporte-val">'+fmt(s.pD)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Pagos a Valentina</span><span class="reporte-val">'+fmt(s.pV)+'</span></div>'+
-      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego (40%)</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad Valentina (60%)</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
+      (s.tD>0?'<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>':'')+
+      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Mi Utilidad</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
       (s.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px">Sin ventas en este período</div>':'')+
-    '</div>';
+    '</div>'+
+    porIntegrante;
 }
 
 function openAdmin(){
