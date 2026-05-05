@@ -243,6 +243,7 @@ window.__FB = {
 <script>
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var hUser='';
+var repUser='';
 var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.75,d:0.25},Diego:{v:1.00,d:0.00}};
 function matchDist(name){
   var n=(name||'').trim().toLowerCase();
@@ -682,6 +683,7 @@ function descargarExcel(){
 }
 
 function setRepPer(p){repPer=p;renderRep();}
+function setRepUser(u){repUser=u;renderRep();}
 
 function renderRep(){
   var el=document.getElementById('sReportes');if(!el)return;
@@ -705,10 +707,16 @@ function renderRep(){
   var isAdm=window.__FB.isAdmin(fbUser.email);
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'}];
   var titulos={dia:'Hoy',sem:'Esta Semana',mes:'Este Mes',ano:'Este Año'};
-  var h=filtrar(repPer),s=stats(h);
+  var hPer_=filtrar(repPer);
+  var members={};ventas.forEach(function(v){if(v.userId&&v.userName)members[v.userId]=v.userName;});
+  if(repUser&&!members[repUser])repUser='';
+  var h=repUser?hPer_.filter(function(v){return v.userId===repUser;}):hPer_;
+  var s=stats(h);
+  var nombreFiltro=repUser?(members[repUser]||''):'';
+  var titBase=titulos[repPer]+(nombreFiltro?' · '+nombreFiltro:'');
 
   var porIntegrante='';
-  if(isAdm){
+  if(isAdm&&!repUser){
     var byU={};
     h.forEach(function(v){
       var uid=v.userId||'?';
@@ -735,17 +743,24 @@ function renderRep(){
       '</div>';
   }
 
+  var memberFilter='';
+  if(isAdm){
+    var mOpts='<option value="">Todos los integrantes</option>'+Object.keys(members).sort(function(a,b){return members[a].localeCompare(members[b]);}).map(function(uid){return '<option value="'+uid+'"'+(repUser===uid?' selected':'')+'>'+members[uid]+'</option>';}).join('');
+    memberFilter='<div style="margin:10px 0"><div class="mes-lbl">Integrante</div><select class="mes-select" onchange="setRepUser(this.value)">'+mOpts+'</select></div>';
+  }
+
   el.innerHTML=
     '<div class="per-tabs">'+
       periodos.map(function(p){return '<button class="per-tab '+(repPer===p.k?'activo':'')+'" onclick="setRepPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
     '</div>'+
+    memberFilter+
     '<div class="rep-resumen">'+
       '<div class="rep-mini"><div class="v">'+s.cnt+'</div><div class="l">Ventas</div></div>'+
       '<div class="rep-mini"><div class="v">'+fmt(s.tV)+'</div><div class="l">Total Ventas</div></div>'+
       '<div class="rep-mini"><div class="v">'+fmt(s.tC)+'</div><div class="l">Costos</div></div>'+
       '<div class="rep-mini"><div class="v" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</div><div class="l">Utilidad</div></div>'+
     '</div>'+
-    '<div class="reporte-card"><div class="reporte-t">📊 '+titulos[repPer]+'</div>'+
+    '<div class="reporte-card"><div class="reporte-t">📊 '+titBase+'</div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val gold">'+fmt(s.tV)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Costo total (oro + insumos)</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
