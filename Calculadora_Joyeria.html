@@ -244,8 +244,18 @@ window.__FB = {
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var hUser='';
 var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.75,d:0.25},Diego:{v:1.00,d:0.00}};
-function matchDist(name){var k=Object.keys(DIST).find(function(k){return(name||'').toLowerCase().startsWith(k.toLowerCase());});return k?{key:k,pct:DIST[k]}:{key:name||'Vendedor',pct:{v:0.60,d:0.40}};}
-function getDist(){var nom=profile?profile.name:(fbUser?fbUser.email.split('@')[0]:'');return matchDist(nom);}
+function matchDist(name){
+  var n=(name||'').trim().toLowerCase();
+  if(!n)return{key:'Vendedor',pct:{v:0.60,d:0.40}};
+  var k=Object.keys(DIST).find(function(k){return k.toLowerCase()===n;});
+  if(!k)k=Object.keys(DIST).find(function(k){var kl=k.toLowerCase();return n===kl||n.split(/[\s.@_-]/)[0]===kl;});
+  return k?{key:k,pct:DIST[k]}:{key:name,pct:{v:0.60,d:0.40}};
+}
+function getDist(){
+  if(profile&&profile.name)return matchDist(profile.name);
+  if(fbUser&&fbUser.email)return matchDist(fbUser.email.split('@')[0]);
+  return{key:'Vendedor',pct:{v:0.60,d:0.40}};
+}
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
 var hPer='todo';
@@ -604,7 +614,6 @@ function renderHLista(){
   var hBase=hFiltrar();
   if(hUser)hBase=hBase.filter(function(v){return v.userId===hUser;});
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
-  var isAdmH=window.__FB.isAdmin(fbUser.email);
   var td=0,tvend=0,ttv=0;
   hBase.forEach(function(v){td+=v.diego||0;tvend+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));ttv+=v.totalVenta||0;});
   var res=document.getElementById('hResumen');
@@ -704,7 +713,7 @@ function renderRep(){
     h.forEach(function(v){
       var uid=v.userId||'?';
       if(!byU[uid])byU[uid]={name:v.userName||'?',cnt:0,tV:0,tU:0,tD:0,tVl:0};
-      byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=v.diego||0;byU[uid].tVl+=v.vale||0;
+      byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=v.diego||0;byU[uid].tVl+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));
     });
     var rows=Object.values(byU).sort(function(a,b){return b.tV-a.tV;});
     porIntegrante=rows.length===0?'':
@@ -715,10 +724,11 @@ function renderRep(){
             '<span style="font-weight:700;font-size:14px;color:var(--tx)">'+u.name+'</span>'+
             '<span class="reporte-val gold">'+fmt(u.tV)+'</span>'+
           '</div>'+
-          '<div style="display:flex;gap:12px;font-size:11px;color:var(--mu)">'+
+          '<div style="display:flex;gap:10px;font-size:11px;color:var(--mu);flex-wrap:wrap">'+
             '<span>'+u.cnt+' venta'+(u.cnt===1?'':'s')+'</span>'+
             '<span>Utilidad: '+fmt(u.tU)+'</span>'+
-            '<span>Diego: '+fmt(u.tD)+'</span>'+
+            '<span style="color:var(--ac)">'+u.name+': '+fmt(u.tVl)+'</span>'+
+            (u.tD>0?'<span>Diego: '+fmt(u.tD)+'</span>':'')+
           '</div>'+
         '</div>';
       }).join('')+
@@ -740,7 +750,7 @@ function renderRep(){
       '<div class="reporte-fila"><span class="reporte-lbl">Costo total (oro + insumos)</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
       (s.tD>0?'<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>':'')+
-      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Mi Utilidad</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
+      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">'+(isAdm?'Total Vendedores':'Mi Utilidad')+'</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
       (s.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px">Sin ventas en este período</div>':'')+
     '</div>'+
     porIntegrante;
