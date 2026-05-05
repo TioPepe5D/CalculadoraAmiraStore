@@ -243,7 +243,7 @@ window.__FB = {
 <script>
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var hUser='';
-var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Jamin:{v:0.75,d:0.25},Jordan:{v:0.75,d:0.25},Diego:{v:1.00,d:0.00}};
+var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.75,d:0.25},Diego:{v:1.00,d:0.00}};
 function matchDist(name){var k=Object.keys(DIST).find(function(k){return(name||'').toLowerCase().startsWith(k.toLowerCase());});return k?{key:k,pct:DIST[k]}:{key:name||'Vendedor',pct:{v:0.60,d:0.40}};}
 function getDist(){var nom=profile?profile.name:(fbUser?fbUser.email.split('@')[0]:'');return matchDist(nom);}
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
@@ -664,7 +664,9 @@ function descargarExcel(){
   var a=document.createElement('a');
   var hoy=new Date().toLocaleDateString('es-CL').replace(/\//g,'-');
   var sufijo=hPer==='todo'?hoy:hPer==='hoy'?hDia:hPer==='sem'?hSem:hPer==='mes'?hMes:hAno;
-  a.href=url;a.download='AmiraStore_Ventas_'+sufijo+'.csv';
+  var members={};ventas.forEach(function(v){if(v.userId&&v.userName)members[v.userId]=v.userName;});
+  var nombreArchivo=hUser?'Ventas_'+(members[hUser]||hUser):'VentasPersonales';
+  a.href=url;a.download=nombreArchivo+'_'+sufijo+'.csv';
   document.body.appendChild(a);a.click();
   setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
   toast('✓ Archivo descargado');
