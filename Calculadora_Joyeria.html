@@ -615,14 +615,13 @@ function renderHLista(){
   var hBase=hFiltrar();
   if(hUser)hBase=hBase.filter(function(v){return v.userId===hUser;});
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
-  var td=0,tvend=0,ttv=0;
-  hBase.forEach(function(v){td+=v.diego||0;tvend+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));ttv+=v.totalVenta||0;});
+  var ttv=0;
+  hBase.forEach(function(v){ttv+=v.totalVenta||0;});
   var res=document.getElementById('hResumen');
   if(res)res.innerHTML=
     '<div class="htotal-resumen">'+
       '<div class="htotal-item"><div class="val">'+hBase.length+'</div><div class="lbl">Ventas</div></div>'+
       '<div class="htotal-item"><div class="val">'+fmt(ttv)+'</div><div class="lbl">Total</div></div>'+
-      '<div class="htotal-item"><div class="val">'+fmt(Math.max(0,td))+'</div><div class="lbl">Diego</div></div>'+
     '</div>';
   var lista=document.getElementById('hLista');if(!lista)return;
   var sinMsg={hoy:'ese día',sem:'esa semana',mes:'ese mes',ano:'ese año',todo:''};
