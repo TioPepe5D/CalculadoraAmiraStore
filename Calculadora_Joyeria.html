@@ -761,7 +761,7 @@ function renderRep(){
     '</div>'+
     '<div class="reporte-card"><div class="reporte-t">📊 '+titBase+'</div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val gold">'+fmt(s.tV)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Costo total (oro + insumos)</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Costo total</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
       (s.tD>0?'<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>':'')+
       '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">'+(isAdm?'Total Vendedores':'Mi Utilidad')+'</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
