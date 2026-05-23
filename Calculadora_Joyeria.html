@@ -193,8 +193,17 @@ select option{background:var(--sf2);color:var(--tx)}
 .tabla-comp td.num{font-family:var(--hf);font-weight:700;text-align:right}
 .tabla-comp td.right{text-align:right;color:var(--mu)}
 .vg-chart{position:relative}
-.vg-tip{position:absolute;background:var(--sf2);border:1px solid var(--ac);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--tx);pointer-events:none;display:none;z-index:5;white-space:nowrap}
-.vg-tip.show{display:block}
+.vg-detail{margin-top:12px;background:linear-gradient(180deg,rgba(212,175,55,.06),rgba(212,175,55,.02));border:1px solid rgba(212,175,55,.25);border-radius:12px;padding:12px 14px}
+.vg-detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.vg-detail-lbl{font-family:var(--hf);font-size:15px;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:1px}
+.vg-detail-sub{font-size:11px;color:var(--mu);margin-top:2px}
+.vg-close{background:transparent;border:1px solid var(--bd2);border-radius:50%;width:26px;height:26px;color:var(--mu);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+.vg-close:hover{border-color:var(--ac);color:var(--ac)}
+.vg-detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 12px}
+.vg-d{display:flex;flex-direction:column;gap:2px;background:rgba(0,0,0,.18);border-radius:8px;padding:8px 10px;min-width:0}
+.vg-d .l{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);font-weight:700}
+.vg-d .v{font-family:var(--hf);font-size:13px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vg-d .sub{font-size:10px;color:var(--mu);font-weight:500}
 .g-nav{display:flex;align-items:center;justify-content:space-between;background:var(--sf2);border:1px solid var(--bd);border-radius:14px;padding:6px 6px;margin:10px 0 14px;gap:6px}
 .g-nav-btn{background:transparent;border:1px solid var(--bd2);color:var(--tx);width:34px;height:34px;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--bf)}
 .g-nav-btn:hover:not(:disabled){border-color:var(--ac);color:var(--ac)}
@@ -303,7 +312,7 @@ window.__FB = {
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var hUser='';
 var repUser='';
-var gPer='mes',gUser='',gOff=0;
+var gPer='mes',gUser='',gOff=0,gSel=null;
 var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.80,d:0.20},Diego:{v:1.00,d:0.00}};
 function matchDist(name){
   var n=(name||'').trim().toLowerCase();
@@ -913,9 +922,8 @@ function gBuckets(per,off){
   return {labels:arr,keys:ks,keyOf:function(v){var d=new Date(v.at||0);return d.getFullYear()*12+d.getMonth();},from:from,to:to};
 }
 
-function svgGroupBars(buckets,serA,serB,opts){
-  opts=opts||{};
-  var w=320,h=190,pl=8,pr=10,pt=22,pb=42;
+function svgGroupBars(buckets,serA,serB,sel){
+  var w=320,h=190,pl=10,pr=10,pt=22,pb=42;
   var n=buckets.labels.length,iw=w-pl-pr,ih=h-pt-pb;
   var max=Math.max(1,Math.max.apply(null,serA.concat(serB)));
   var step=iw/n,gap=Math.max(2,step*0.18),bw=(step-gap*3)/2;
@@ -923,24 +931,29 @@ function svgGroupBars(buckets,serA,serB,opts){
   var idxB=-1,maxB=-1;serB.forEach(function(v,i){if(v>maxB){maxB=v;idxB=i;}});
   var ticks=4,gridY='';
   for(var t=1;t<=ticks;t++){var y=pt+(ih*t/ticks);gridY+='<line x1="'+pl+'" y1="'+y+'" x2="'+(w-pr)+'" y2="'+y+'" stroke="rgba(255,255,255,.04)" stroke-width="1"/>';}
-  var bars='',lbls='';
+  var bars='',lbls='',hits='';
   for(var i=0;i<n;i++){
     var bx=pl+i*step+gap, vA=serA[i]||0, vB=serB[i]||0;
     var hA=(vA/max)*ih,hB=(vB/max)*ih;
     var yA=pt+ih-hA,yB=pt+ih-hB;
-    bars+='<rect data-i="'+i+'" data-a="'+vA+'" data-b="'+vB+'" data-lbl="'+escSvg(buckets.labels[i])+'" x="'+bx+'" y="'+yA+'" width="'+bw+'" height="'+hA+'" rx="2" fill="url(#vgA)" class="vg-bar"/>';
-    bars+='<rect data-i="'+i+'" data-a="'+vA+'" data-b="'+vB+'" data-lbl="'+escSvg(buckets.labels[i])+'" x="'+(bx+bw+gap)+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" rx="2" fill="url(#vgB)" class="vg-bar"/>';
-    if(i===maxIdx&&vA>0)bars+='<text x="'+(bx+bw/2)+'" y="'+(yA-4)+'" text-anchor="middle" font-size="10" fill="#d4d4d4" font-weight="700">'+fmtCorto(vA)+'</text>';
-    if(i===idxB&&vB>0)bars+='<text x="'+(bx+bw+gap+bw/2)+'" y="'+(yB-4)+'" text-anchor="middle" font-size="10" fill="#7fb069" font-weight="700">'+fmtCorto(vB)+'</text>';
-    var lblX=pl+i*step+step/2;
-    if(n<=12||i%Math.ceil(n/8)===0||i===n-1)lbls+='<text x="'+lblX+'" y="'+(h-22)+'" text-anchor="middle" font-size="8" fill="#888">'+escSvg(buckets.labels[i])+'</text>';
+    var dimmed=(sel!==null&&sel!==i),op=dimmed?'0.28':'1';
+    bars+='<rect x="'+bx+'" y="'+yA+'" width="'+bw+'" height="'+hA+'" rx="2" fill="url(#vgA)" opacity="'+op+'"/>';
+    bars+='<rect x="'+(bx+bw+gap)+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" rx="2" fill="url(#vgB)" opacity="'+op+'"/>';
+    if(sel===i){
+      bars+='<rect x="'+(pl+i*step+1)+'" y="'+(pt+4)+'" width="'+(step-2)+'" height="'+(ih-4)+'" rx="6" fill="none" stroke="rgba(212,175,55,.55)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+    }
+    if(i===maxIdx&&vA>0&&sel===null)bars+='<text x="'+(bx+bw/2)+'" y="'+(yA-4)+'" text-anchor="middle" font-size="10" fill="#d4d4d4" font-weight="700">'+fmtCorto(vA)+'</text>';
+    if(i===idxB&&vB>0&&sel===null)bars+='<text x="'+(bx+bw+gap+bw/2)+'" y="'+(yB-4)+'" text-anchor="middle" font-size="10" fill="#7fb069" font-weight="700">'+fmtCorto(vB)+'</text>';
+    var lblX=pl+i*step+step/2,lblFill=(sel===i)?'#d4af37':'#888',lblWeight=(sel===i)?'700':'400';
+    if(n<=12||i%Math.ceil(n/8)===0||i===n-1)lbls+='<text x="'+lblX+'" y="'+(h-22)+'" text-anchor="middle" font-size="9" fill="'+lblFill+'" font-weight="'+lblWeight+'">'+escSvg(buckets.labels[i])+'</text>';
+    hits+='<rect x="'+(pl+i*step)+'" y="'+pt+'" width="'+step+'" height="'+(ih+4)+'" fill="transparent" style="cursor:pointer" onclick="setGSel('+i+')"/>';
   }
   return '<svg class="chart-svg vg-svg" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">'+
     '<defs>'+
       '<linearGradient id="vgA" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#7aa6d8"/><stop offset="100%" stop-color="#3d5a80"/></linearGradient>'+
       '<linearGradient id="vgB" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#8fd9a8"/><stop offset="100%" stop-color="#4a8c64"/></linearGradient>'+
     '</defs>'+
-    gridY+bars+lbls+
+    gridY+bars+lbls+hits+
   '</svg>'+
   '<div class="chart-leg" style="justify-content:flex-start;gap:14px;margin-top:4px">'+
     '<span><i style="background:#5a7fa8"></i>Venta</span>'+
@@ -948,23 +961,12 @@ function svgGroupBars(buckets,serA,serB,opts){
   '</div>';
 }
 
-function setGPer(p){gPer=p;gOff=0;renderG();}
-function setGUser(u){gUser=u;renderG();}
-function gNav(d){gOff+=d;if(gOff>0)gOff=0;renderG();}
-function gHoy(){gOff=0;renderG();}
+function setGPer(p){gPer=p;gOff=0;gSel=null;renderG();}
+function setGUser(u){gUser=u;gSel=null;renderG();}
+function gNav(d){gOff+=d;if(gOff>0)gOff=0;gSel=null;renderG();}
+function gHoy(){gOff=0;gSel=null;renderG();}
+function setGSel(i){i=parseInt(i,10);gSel=(gSel===i)?null:i;renderG();}
 function setTbSort(c){if(tbSort.c===c)tbSort.dir=-tbSort.dir;else{tbSort.c=c;tbSort.dir=-1;}renderG();}
-
-function vgBarTap(ev){
-  var t=ev.target.closest('.vg-bar');if(!t)return;
-  var box=document.getElementById('vgTip');if(!box)return;
-  var lbl=t.getAttribute('data-lbl'),a=parseFloat(t.getAttribute('data-a'))||0,b=parseFloat(t.getAttribute('data-b'))||0;
-  box.innerHTML='<strong>'+lbl+'</strong><br>Venta: '+fmtCorto(a)+'<br>Ganancia: '+fmtCorto(b);
-  var r=t.getBoundingClientRect(),host=box.parentElement.getBoundingClientRect();
-  box.style.left=(r.left-host.left+r.width/2-box.offsetWidth/2)+'px';
-  box.style.top=(r.top-host.top-box.offsetHeight-6)+'px';
-  box.classList.add('show');
-  clearTimeout(window.__vgT);window.__vgT=setTimeout(function(){box.classList.remove('show');},2500);
-}
 
 var tbSort={c:'gramos',dir:-1};
 
@@ -1038,9 +1040,40 @@ function renderG(){
   var tabRows=prodSorted.map(function(r){return {prod:r.n,emo:r.emo,ventas:r.ven,gramos:r.g,prom:r.ven?r.g/r.ven:0,ingresos:r.ing};});
   tabRows.sort(function(a,b){var x=a[tbSort.c],y=b[tbSort.c];if(typeof x==='string')return tbSort.dir*x.localeCompare(y);return tbSort.dir*(x-y);});
 
+  if(gSel!==null&&(gSel<0||gSel>=buckets.keys.length))gSel=null;
   var vgChart=h.length===0
     ?'<div style="text-align:center;color:var(--mu);padding:24px;font-size:12px">Sin datos en este período</div>'
-    :svgGroupBars(buckets,serA,serB);
+    :svgGroupBars(buckets,serA,serB,gSel);
+
+  // Detalle de barra seleccionada
+  var detalleHtml='';
+  if(h.length>0&&gSel!==null){
+    var selKey=buckets.keys[gSel];
+    var selItems=h.filter(function(v){return buckets.keyOf(v)===selKey;});
+    var dV=0,dU=0;selItems.forEach(function(v){dV+=v.totalVenta||0;dU+=v.utilidad||0;});
+    var dMargen=dV>0?(dU/dV*100):0;
+    var dTicket=selItems.length?dV/selItems.length:0;
+    var dUsers={};selItems.forEach(function(v){var uid=v.userId||'?',nom=v.userName||'?';if(!dUsers[uid])dUsers[uid]={name:nom,n:0,t:0};dUsers[uid].n++;dUsers[uid].t+=v.totalVenta||0;});
+    var topU=Object.values(dUsers).sort(function(a,b){return b.t-a.t;})[0];
+    var dCats={};selItems.forEach(function(v){(v.lineas||[]).forEach(function(l){if(!dCats[l.cat])dCats[l.cat]={g:0};dCats[l.cat].g+=l.gr||0;});});
+    var topC=Object.keys(dCats).map(function(k){return {k:k,g:dCats[k].g};}).sort(function(a,b){return b.g-a.g;})[0];
+    var prodNames2={Cadena:'Cadena',Micro:'Micro',GF18K:'GF 18 K',Italy:'Italy'};
+    detalleHtml=
+      '<div class="vg-detail">'+
+        '<div class="vg-detail-head">'+
+          '<div><div class="vg-detail-lbl">'+escSvg(buckets.labels[gSel])+'</div><div class="vg-detail-sub">'+selItems.length+' venta'+(selItems.length===1?'':'s')+'</div></div>'+
+          '<button class="vg-close" onclick="setGSel('+gSel+')" title="Cerrar">✕</button>'+
+        '</div>'+
+        '<div class="vg-detail-grid">'+
+          '<div class="vg-d"><span class="l">Venta</span><span class="v" style="color:#7aa6d8">'+fmtCorto(dV)+'</span></div>'+
+          '<div class="vg-d"><span class="l">Ganancia</span><span class="v" style="color:#7fb069">'+fmtCorto(dU)+'</span></div>'+
+          '<div class="vg-d"><span class="l">Margen</span><span class="v">'+dMargen.toFixed(0)+'%</span></div>'+
+          '<div class="vg-d"><span class="l">Ticket</span><span class="v">'+fmtCorto(dTicket)+'</span></div>'+
+          (topU?'<div class="vg-d"><span class="l">Top vendedor</span><span class="v">'+escSvg(topU.name)+'</span><span class="sub">'+fmtCorto(topU.t)+' · '+topU.n+'v</span></div>':'')+
+          (topC?'<div class="vg-d"><span class="l">Top producto</span><span class="v">'+escSvg(prodNames2[topC.k]||topC.k)+'</span><span class="sub">'+fmtGr(topC.g)+'</span></div>':'')+
+        '</div>'+
+      '</div>';
+  }
 
   var comisHtml=comList.length===0?'<div style="color:var(--mu);font-size:12px;padding:8px 0">Sin comisiones</div>':
     comList.map(function(c,i){
@@ -1100,7 +1133,8 @@ function renderG(){
     '</div>'+
     '<div class="chart-card">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Venta <span style="color:#fff">vs</span> Ganancia</div><div style="font-size:10px;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase">Toca una barra</div></div>'+
-      '<div class="vg-chart" onclick="vgBarTap(event)">'+vgChart+'<div class="vg-tip" id="vgTip"></div></div>'+
+      '<div class="vg-chart">'+vgChart+'</div>'+
+      detalleHtml+
     '</div>'+
     '<div class="chart-card">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Comisiones <span style="color:var(--mu);font-size:11px">por persona</span></div><div style="font-size:11px;color:var(--mu)"><strong style="color:var(--ac)">'+fmtCorto(totalEquipo)+'</strong> total equipo</div></div>'+
