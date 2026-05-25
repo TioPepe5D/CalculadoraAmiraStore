@@ -165,8 +165,8 @@ select option{background:var(--sf2);color:var(--tx)}
 .chart-leg span{display:inline-flex;align-items:center;gap:5px}
 .chart-leg i{display:inline-block;width:10px;height:10px;border-radius:2px}
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:12px 8px;text-align:center}
-.kpi .v{font-family:var(--hf);font-size:18px;color:var(--ac);font-weight:700;line-height:1.1}
+.kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:12px 6px;text-align:center;min-width:0}
+.kpi .v{font-family:var(--hf);font-size:15px;color:var(--ac);font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .l{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
 .kpi .s{font-size:10px;color:var(--mu);margin-top:3px}
 .kpi.green .v{color:var(--ok)}
@@ -186,12 +186,14 @@ select option{background:var(--sf2);color:var(--tx)}
 .prod-n{font-size:14px;font-weight:700;color:var(--tx)}
 .prod-pct{font-size:11px;color:var(--mu);margin-right:8px}
 .prod-v{font-family:var(--hf);font-size:14px;font-weight:700}
-.tabla-comp{width:100%;border-collapse:collapse;font-size:12px}
-.tabla-comp th{padding:8px 6px;color:var(--mu);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;text-align:left;border-bottom:1px solid var(--bd);cursor:pointer;user-select:none}
+.tabla-comp{width:100%;border-collapse:collapse;font-size:11.5px}
+.tabla-comp th{padding:8px 4px;color:var(--mu);font-size:9.5px;letter-spacing:1px;text-transform:uppercase;text-align:right;border-bottom:1px solid var(--bd);cursor:pointer;user-select:none;white-space:nowrap}
+.tabla-comp th:first-child{text-align:left}
 .tabla-comp th.activo{color:var(--ac)}
-.tabla-comp td{padding:10px 6px;border-bottom:1px solid var(--bd);color:var(--tx)}
-.tabla-comp td.num{font-family:var(--hf);font-weight:700;text-align:right}
-.tabla-comp td.right{text-align:right;color:var(--mu)}
+.tabla-comp td{padding:9px 4px;border-bottom:1px solid var(--bd);color:var(--tx);white-space:nowrap;text-align:right}
+.tabla-comp td:first-child{text-align:left}
+.tabla-comp td.num{font-family:var(--hf);font-weight:700}
+.tabla-comp td.right{color:var(--mu)}
 .vg-chart{position:relative}
 .vg-detail{margin-top:12px;background:linear-gradient(180deg,rgba(212,175,55,.06),rgba(212,175,55,.02));border:1px solid rgba(212,175,55,.25);border-radius:12px;padding:12px 14px}
 .vg-detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
@@ -325,6 +327,15 @@ function getDist(){
   if(profile&&profile.name)return matchDist(profile.name);
   if(fbUser&&fbUser.email)return matchDist(fbUser.email.split('@')[0]);
   return{key:'Vendedor',pct:{v:0.60,d:0.40}};
+}
+function comFor(v){
+  var u=v.utilidad||0,pV,pD;
+  if(v.pctVendedor!==undefined&&v.pctDiego!==undefined){
+    pV=v.pctVendedor;pD=v.pctDiego;
+  } else {
+    var d=matchDist(v.userName||'');pV=d.pct.v;pD=d.pct.d;
+  }
+  return {vendedor:u*pV,diego:u*pD,pV:pV,pD:pD};
 }
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
@@ -760,7 +771,7 @@ function descargarExcel(){
     function nc(n){return String(n||0).replace('.',',');}
     var costoIns=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
     var base=[v.fecha||'', v.hora||'', nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K), nc(costoIns), nc(v.totalVenta||0)];
-    return isAdm?[v.userName||''].concat(base).concat([nc(v.utilidad||0),nc(v.diego||0),nc(v.vendedor!==undefined?v.vendedor:(v.vale||0))]):base;
+    var c=comFor(v);return isAdm?[v.userName||''].concat(base).concat([nc(v.utilidad||0),nc(c.diego),nc(c.vendedor)]):base;
   });
   function esc(val){
     var s=String(val===null||val===undefined?'':val);
@@ -798,8 +809,8 @@ function renderRep(){
   function stats(h){
     var tV=0,tU=0,tD=0,tVl=0;
     h.forEach(function(v){
-      tV+=v.totalVenta||0;tU+=v.utilidad||0;tD+=v.diego||0;
-      tVl+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));
+      tV+=v.totalVenta||0;tU+=v.utilidad||0;
+      var c=comFor(v);tD+=c.diego;tVl+=c.vendedor;
     });
     return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:Math.max(0,tV-tU),cnt:h.length};
   }
@@ -820,7 +831,7 @@ function renderRep(){
     h.forEach(function(v){
       var uid=v.userId||'?';
       if(!byU[uid])byU[uid]={name:v.userName||'?',cnt:0,tV:0,tU:0,tD:0,tVl:0};
-      byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=v.diego||0;byU[uid].tVl+=(v.vendedor!==undefined?v.vendedor:(v.vale||0));
+      var c=comFor(v);byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=c.diego;byU[uid].tVl+=c.vendedor;
     });
     var rows=Object.values(byU).sort(function(a,b){return b.tV-a.tV;});
     porIntegrante=rows.length===0?'':
@@ -1006,15 +1017,15 @@ function renderG(){
     var uid=v.userId||'?',nom=v.userName||'?';
     if(!comisiones[uid])comisiones[uid]={name:nom,total:0,propias:0,cruzadas:0,ventas:0};
     comisiones[uid].ventas++;
-    var vend=v.vendedor!==undefined?v.vendedor:0;
-    comisiones[uid].propias+=vend;
-    comisiones[uid].total+=vend;
-    if((v.diego||0)>0){
-      var diegoEntry=null,diegoUid=null;
-      Object.keys(members).forEach(function(uk){if(isDiego(members[uk])){diegoEntry=uk;}});
-      diegoUid=diegoEntry||'__diego__';
+    var c=comFor(v);
+    comisiones[uid].propias+=c.vendedor;
+    comisiones[uid].total+=c.vendedor;
+    if(c.diego>0){
+      var diegoUid=null;
+      Object.keys(members).forEach(function(uk){if(isDiego(members[uk]))diegoUid=uk;});
+      diegoUid=diegoUid||'__diego__';
       if(!comisiones[diegoUid])comisiones[diegoUid]={name:'Diego',total:0,propias:0,cruzadas:0,ventas:0};
-      if(diegoUid!==uid){comisiones[diegoUid].cruzadas+=v.diego;comisiones[diegoUid].total+=v.diego;}
+      if(diegoUid!==uid){comisiones[diegoUid].cruzadas+=c.diego;comisiones[diegoUid].total+=c.diego;}
     }
   });
   var totalEquipo=Object.values(comisiones).reduce(function(s,c){return s+c.total;},0);
@@ -1065,11 +1076,11 @@ function renderG(){
           '<button class="vg-close" onclick="setGSel('+gSel+')" title="Cerrar">✕</button>'+
         '</div>'+
         '<div class="vg-detail-grid">'+
-          '<div class="vg-d"><span class="l">Venta</span><span class="v" style="color:#7aa6d8">'+fmtCorto(dV)+'</span></div>'+
-          '<div class="vg-d"><span class="l">Ganancia</span><span class="v" style="color:#7fb069">'+fmtCorto(dU)+'</span></div>'+
+          '<div class="vg-d"><span class="l">Venta</span><span class="v" style="color:#7aa6d8">'+fmt(dV)+'</span></div>'+
+          '<div class="vg-d"><span class="l">Ganancia</span><span class="v" style="color:#7fb069">'+fmt(dU)+'</span></div>'+
           '<div class="vg-d"><span class="l">Margen</span><span class="v">'+dMargen.toFixed(0)+'%</span></div>'+
-          '<div class="vg-d"><span class="l">Ticket</span><span class="v">'+fmtCorto(dTicket)+'</span></div>'+
-          (topU?'<div class="vg-d"><span class="l">Top vendedor</span><span class="v">'+escSvg(topU.name)+'</span><span class="sub">'+fmtCorto(topU.t)+' · '+topU.n+'v</span></div>':'')+
+          '<div class="vg-d"><span class="l">Ticket</span><span class="v">'+fmt(dTicket)+'</span></div>'+
+          (topU?'<div class="vg-d"><span class="l">Top vendedor</span><span class="v">'+escSvg(topU.name)+'</span><span class="sub">'+fmt(topU.t)+' · '+topU.n+'v</span></div>':'')+
           (topC?'<div class="vg-d"><span class="l">Top producto</span><span class="v">'+escSvg(prodNames2[topC.k]||topC.k)+'</span><span class="sub">'+fmtGr(topC.g)+'</span></div>':'')+
         '</div>'+
       '</div>';
@@ -1080,10 +1091,10 @@ function renderG(){
       var col=COMI_COLORS[i%COMI_COLORS.length];
       var pct=totalEquipo>0?(c.total/totalEquipo*100):0;
       var sub=c.cruzadas>0
-        ?'<span>Propias <b>'+fmtCorto(c.propias)+'</b></span><span>Cruzadas <b>'+fmtCorto(c.cruzadas)+'</b></span>'
-        :'<span>'+c.ventas+' venta'+(c.ventas===1?'':'s')+'</span><span>Vendedor <b>'+fmtCorto(c.propias)+'</b></span>';
+        ?'<span>Propias <b>'+fmt(c.propias)+'</b></span><span>Cruzadas <b>'+fmt(c.cruzadas)+'</b></span>'
+        :'<span>'+c.ventas+' venta'+(c.ventas===1?'':'s')+'</span><span>Vendedor <b>'+fmt(c.propias)+'</b></span>';
       return '<div class="com-row">'+
-        '<div class="com-head"><span class="com-name">'+escSvg(c.name)+'</span><span><span class="com-pct">'+pct.toFixed(0)+'%</span><span class="com-amt" style="color:'+col+'">'+fmtCorto(c.total)+'</span></span></div>'+
+        '<div class="com-head"><span class="com-name">'+escSvg(c.name)+'</span><span><span class="com-pct">'+pct.toFixed(0)+'%</span><span class="com-amt" style="color:'+col+'">'+fmt(c.total)+'</span></span></div>'+
         '<div class="com-bar"><i style="width:'+Math.max(2,pct)+'%;background:'+col+'"></i></div>'+
         '<div class="com-sub">'+sub+'</div>'+
       '</div>';
@@ -1109,7 +1120,7 @@ function renderG(){
       '<td class="right">'+r.ventas+'</td>'+
       '<td class="num">'+fmtGr(r.gramos)+'</td>'+
       '<td class="right">'+fmtGr(r.prom)+'</td>'+
-      '<td class="right">'+fmtCorto(r.ingresos)+'</td>'+
+      '<td class="num">'+fmt(r.ingresos)+'</td>'+
     '</tr>';}).join('')+
     '</tbody></table>';
 
@@ -1127,8 +1138,8 @@ function renderG(){
     navHtml+
     memberFilter+
     '<div class="kpi-grid">'+
-      '<div class="kpi"><div class="l">Ventas</div><div class="v">'+fmtCorto(tV)+'</div><div class="s">'+h.length+' ventas</div></div>'+
-      '<div class="kpi green"><div class="l">Ganancia</div><div class="v">'+fmtCorto(tU)+'</div><div class="s">Neta</div></div>'+
+      '<div class="kpi"><div class="l">Ventas</div><div class="v">'+fmt(tV)+'</div><div class="s">'+h.length+' ventas</div></div>'+
+      '<div class="kpi green"><div class="l">Ganancia</div><div class="v">'+fmt(tU)+'</div><div class="s">Neta</div></div>'+
       '<div class="kpi"><div class="l">Margen</div><div class="v">'+margen.toFixed(0)+'%</div><div class="s">Bruto</div></div>'+
     '</div>'+
     '<div class="chart-card">'+
@@ -1137,7 +1148,7 @@ function renderG(){
       detalleHtml+
     '</div>'+
     '<div class="chart-card">'+
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Comisiones <span style="color:var(--mu);font-size:11px">por persona</span></div><div style="font-size:11px;color:var(--mu)"><strong style="color:var(--ac)">'+fmtCorto(totalEquipo)+'</strong> total equipo</div></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Comisiones <span style="color:var(--mu);font-size:11px">por persona</span></div><div style="font-size:11px;color:var(--mu)"><strong style="color:var(--ac)">'+fmt(totalEquipo)+'</strong> total equipo</div></div>'+
       comisHtml+
     '</div>'+
     '<div class="chart-card">'+
@@ -1156,6 +1167,33 @@ var PRICE_MIGRATION_MAP={
   GF18K:{1200:1500,1400:1600}
 };
 var MIGRATION_FROM=new Date(2026,4,1,0,0,0).getTime();
+
+function recalcularComisiones(){
+  if(!window.__FB.isAdmin(fbUser.email)){toast('Solo admin');return;}
+  if(!ventas.length){toast('Sin ventas');return;}
+  var afectadas=ventas.filter(function(v){
+    var c=comFor(v);
+    var dv=Math.abs(c.vendedor-(v.vendedor||0))>1;
+    var dd=Math.abs(c.diego-(v.diego||0))>1;
+    return dv||dd;
+  });
+  if(!afectadas.length){toast('Comisiones ya están al día');return;}
+  if(!confirm('Se recalcularán '+afectadas.length+' venta(s) ajustando vendedor/diego a partir de utilidad × %.\n\n¿Continuar?'))return;
+  var btn=document.getElementById('btnRecCom');if(btn){btn.disabled=true;btn.textContent='Recalculando…';}
+  var ok=0,err=0;
+  var tasks=afectadas.map(function(v){
+    var c=comFor(v);
+    return window.__FB.updateVenta(v.id,{
+      vendedor:c.vendedor,diego:c.diego,
+      pctVendedor:c.pV,pctDiego:c.pD,
+      recalcComAt:Date.now()
+    }).then(function(){ok++;},function(){err++;});
+  });
+  Promise.all(tasks).then(function(){
+    if(btn){btn.disabled=false;btn.textContent='⚙️ Recalcular comisiones';}
+    toastOk('✓ '+ok+' venta(s) actualizadas'+(err?' · '+err+' con error':''));
+  });
+}
 
 function migrarCostosMayo(){
   if(!window.__FB.isAdmin(fbUser.email)){toast('Solo admin');return;}
@@ -1240,6 +1278,8 @@ function loadAdmin(t){
           '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔧 Mantenimiento</div>'+
           '<button class="btn-s" id="btnMigrar" onclick="migrarCostosMayo()">🔧 Migrar costos (desde 1-may)</button>'+
           '<p class="nota" style="margin-top:6px">Aplica los nuevos precios kilero a Cadena/Micro y recalcula GF 18 K (Oro) en todas las ventas desde 1-may.</p>'+
+          '<button class="btn-s" id="btnRecCom" onclick="recalcularComisiones()" style="margin-top:10px">⚙️ Recalcular comisiones</button>'+
+          '<p class="nota" style="margin-top:6px">Reescribe los campos vendedor/Diego de cada venta como utilidad × %. Útil si hay diferencias entre Reportes y Gráficos.</p>'+
         '</div>';
     }
   });
