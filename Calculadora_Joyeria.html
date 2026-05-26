@@ -482,7 +482,7 @@ function hCat(cat,emoji,nom,p1,p2){
     '<div class="cat-i"><div><div class="cat-l">Gramos</div><input type="text" inputmode="decimal" class="cat-gr" data-cat="'+cat+'" placeholder="0" oninput="this.value=this.value.replace(\',\',\'.\');calcular()"></div>'+
     '<div><div class="cat-l">$ por gramo</div><div class="precio-btns">'+
       '<button class="precio-btn'+(dKil?'':' activo')+'" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p1+',this)">$'+p1.toLocaleString('es-CL')+'</button>'+
-      '<button class="precio-btn'+(dKil?' activo':'')+'" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p2+',this)">$'+p2.toLocaleString('es-CL')+'<span class="kilero">Kilero</span></button>'+
+      '<button class="precio-btn'+(dKil?' activo':'')+'" data-cat="'+cat+'" onclick="setPKilero(\''+cat+'\','+p2+',this)">$'+p2.toLocaleString('es-CL')+'<span class="kilero">Kilero</span></button>'+
     '</div><input type="hidden" class="cat-pgr" data-cat="'+cat+'" value="'+pIni+'"></div></div></div>';
 }
 
@@ -501,6 +501,20 @@ function setP(cat,val,btn){
   btn.classList.add('activo');
   var p=document.getElementById('p-'+cat);if(p)p.textContent='$'+val.toLocaleString('es-CL')+'/gr';
   calcular();
+}
+
+var KILERO_UNLOCKED=false;
+function kileroCondicion(){
+  var totalGr=0;document.querySelectorAll('.cat-gr').forEach(function(i){totalGr+=parseFloat(i.value)||0;});
+  var totalVenta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
+  return totalGr>=500||totalVenta>=250000;
+}
+function setPKilero(cat,val,btn){
+  if(isDiegoUser()||KILERO_UNLOCKED||kileroCondicion()){setP(cat,val,btn);return;}
+  var code=prompt('⚠ Precio Kilero bloqueado\n\nSe requiere venta de 500 g o más, o monto sobre $250.000.\n\nSi no cumple la condición, pídele el código a Diego.\n\nIngresá el código:');
+  if(code===null)return;
+  if(code.trim()==='10'){KILERO_UNLOCKED=true;setP(cat,val,btn);toastOk('✓ Kilero autorizado para esta venta');}
+  else{toast('Código incorrecto. Pídele el código a Diego.');}
 }
 
 function addIns(){
@@ -568,6 +582,7 @@ function copiarConImg(){
 
 function _resetForm(){
   document.querySelectorAll('input[type="number"],input[type="text"]').forEach(function(el){el.value='';});
+  KILERO_UNLOCKED=false;
   var dKil=isDiegoUser();
   var def=dKil?{Cadena:405,Micro:570,Italy:3000,GF18K:1500}:{Cadena:450,Micro:650,Italy:3000,GF18K:1600};
   Object.keys(def).forEach(function(cat){
