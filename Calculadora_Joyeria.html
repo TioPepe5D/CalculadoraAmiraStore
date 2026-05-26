@@ -328,6 +328,10 @@ function getDist(){
   if(fbUser&&fbUser.email)return matchDist(fbUser.email.split('@')[0]);
   return{key:'Vendedor',pct:{v:0.60,d:0.40}};
 }
+function isDiegoUser(){
+  var n=((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'').trim().toLowerCase();
+  return n==='diego';
+}
 function comFor(v){
   var u=v.utilidad||0,pV,pD;
   if(v.pctVendedor!==undefined&&v.pctDiego!==undefined){
@@ -473,12 +477,13 @@ function htmlVenta(){
 }
 
 function hCat(cat,emoji,nom,p1,p2){
-  return '<div class="cat"><div class="cat-h"><div class="cat-n">'+emoji+' '+nom+'</div><div class="cat-p" id="p-'+cat+'">$'+p1.toLocaleString('es-CL')+'/gr</div></div>'+
+  var dKil=isDiegoUser(),pIni=dKil?p2:p1;
+  return '<div class="cat"><div class="cat-h"><div class="cat-n">'+emoji+' '+nom+'</div><div class="cat-p" id="p-'+cat+'">$'+pIni.toLocaleString('es-CL')+'/gr</div></div>'+
     '<div class="cat-i"><div><div class="cat-l">Gramos</div><input type="text" inputmode="decimal" class="cat-gr" data-cat="'+cat+'" placeholder="0" oninput="this.value=this.value.replace(\',\',\'.\');calcular()"></div>'+
     '<div><div class="cat-l">$ por gramo</div><div class="precio-btns">'+
-      '<button class="precio-btn activo" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p1+',this)">$'+p1.toLocaleString('es-CL')+'</button>'+
-      '<button class="precio-btn" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p2+',this)">$'+p2.toLocaleString('es-CL')+'<span class="kilero">Kilero</span></button>'+
-    '</div><input type="hidden" class="cat-pgr" data-cat="'+cat+'" value="'+p1+'"></div></div></div>';
+      '<button class="precio-btn'+(dKil?'':' activo')+'" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p1+',this)">$'+p1.toLocaleString('es-CL')+'</button>'+
+      '<button class="precio-btn'+(dKil?' activo':'')+'" data-cat="'+cat+'" onclick="setP(\''+cat+'\','+p2+',this)">$'+p2.toLocaleString('es-CL')+'<span class="kilero">Kilero</span></button>'+
+    '</div><input type="hidden" class="cat-pgr" data-cat="'+cat+'" value="'+pIni+'"></div></div></div>';
 }
 
 function startListener(){
@@ -563,11 +568,14 @@ function copiarConImg(){
 
 function _resetForm(){
   document.querySelectorAll('input[type="number"],input[type="text"]').forEach(function(el){el.value='';});
-  var def={Cadena:450,Micro:650,Italy:3000,GF18K:1600};
+  var dKil=isDiegoUser();
+  var def=dKil?{Cadena:405,Micro:570,Italy:3000,GF18K:1500}:{Cadena:450,Micro:650,Italy:3000,GF18K:1600};
   Object.keys(def).forEach(function(cat){
     var pgr=document.querySelector('.cat-pgr[data-cat="'+cat+'"]');if(pgr)pgr.value=def[cat];
-    document.querySelectorAll('.precio-btn[data-cat="'+cat+'"]').forEach(function(b){b.classList.remove('activo');});
-    var btns=document.querySelectorAll('.precio-btn[data-cat="'+cat+'"]');if(btns.length)btns[0].classList.add('activo');
+    var btns=document.querySelectorAll('.precio-btn[data-cat="'+cat+'"]');
+    btns.forEach(function(b){b.classList.remove('activo');});
+    var idx=(dKil&&btns.length>1)?1:0;
+    if(btns.length)btns[idx].classList.add('activo');
     var pel=document.getElementById('p-'+cat);if(pel)pel.textContent='$'+def[cat].toLocaleString('es-CL')+'/gr';
   });
   var vp=document.getElementById('vPor');if(vp)vp.selectedIndex=0;
