@@ -124,6 +124,11 @@ select option{background:var(--sf2);color:var(--tx)}
 .htag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:22px;padding:8px 13px;font-size:13px;color:var(--tx);font-weight:500}
 .htag i{font-style:normal;color:var(--mu);font-size:12px;margin-left:2px}
 .htag.activa{background:rgba(110,170,210,.10);border-color:rgba(120,180,220,.45)}
+.htag.kilero{background:rgba(232,176,75,.10);border-color:rgba(232,176,75,.45);color:#e8b04b}
+.htag.kilero i{color:#e8b04b;opacity:.8}
+.htag .kt{display:inline-block;background:#e8b04b;color:#1a1a1a;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:4px;letter-spacing:.5px}
+.kbadge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#e8b04b,#c9913a);color:#1a1a1a;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;text-shadow:0 1px 0 rgba(255,255,255,.2)}
+.hventa.kilero{border-color:rgba(232,176,75,.45);box-shadow:inset 0 0 0 1px rgba(232,176,75,.10)}
 .hpill-row{display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap}
 .hpill{flex:1;min-width:90px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:24px;padding:6px 10px}
 .hpill-circ{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
@@ -341,6 +346,9 @@ function comFor(v){
   }
   return {vendedor:u*pV,diego:u*pD,pV:pV,pD:pD};
 }
+var KILERO_PGR={Cadena:{400:1,405:1},Micro:{550:1,570:1},GF18K:{1200:1,1500:1}};
+function esKileroLinea(l){return !!(l&&KILERO_PGR[l.cat]&&KILERO_PGR[l.cat][l.pgr]);}
+function ventaTieneKilero(v){return (v&&v.lineas||[]).some(esKileroLinea);}
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
 var hPer='todo';
@@ -748,7 +756,8 @@ function renderHLista(){
   function initial(s){return((s||'?').trim().charAt(0)||'?').toUpperCase();}
   function lineaTag(l){
     var nom=EN[l.cat]||l.cat,em=EE[l.cat]||'';
-    return '<span class="htag">'+escSvg(nom)+' '+em+' <i>'+l.gr+'g</i></span>';
+    var kil=esKileroLinea(l);
+    return '<span class="htag'+(kil?' kilero':'')+'">'+escSvg(nom)+' '+em+' <i>'+l.gr+'g</i>'+(kil?' <b class="kt">K</b>':'')+'</span>';
   }
 
   lista.innerHTML=orden.map(function(k){
@@ -762,8 +771,9 @@ function renderHLista(){
       var pillVendedor='<div class="hpill"><div class="hpill-circ" style="background:'+avatarColor(nom)+'">'+initial(nom)+'</div><div class="hpill-info"><span class="l">Vendedor</span><span class="v">'+escSvg(nom)+'</span></div></div>';
       var pillCanal=vPorLbl!=='—'?'<div class="hpill"><div class="hpill-circ" style="background:#5b9aa0">📦</div><div class="hpill-info"><span class="l">Canal</span><span class="v">'+escSvg(vPorLbl==='Venta en oficina'?'Presencial':vPorLbl)+'</span></div></div>':'';
       var insumosLine=(v.insumos&&v.insumos.length)?'<div style="font-size:11px;color:var(--mu);margin:-4px 0 10px">💎 '+v.insumos.map(function(i){return escSvg(i.desc)+' '+fmt(i.costo);}).join(' · ')+'</div>':'';
-      return '<div class="hventa">'+
-        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+'</div><div class="hventa-fecha">'+escSvg(g.lbl==='HOY'?'Hoy':g.lbl==='AYER'?'Ayer':(v.fecha||''))+' · '+escSvg(v.hora||'')+'</div></div>'+
+      var kileroChip=ventaTieneKilero(v)?'<span class="kbadge">🏷 KILERO</span>':'';
+      return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+'">'+
+        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+'</div><div class="hventa-fecha">'+escSvg(g.lbl==='HOY'?'Hoy':g.lbl==='AYER'?'Ayer':(v.fecha||''))+' · '+escSvg(v.hora||'')+'</div></div>'+
         '<div class="htag-row">'+(tags||'<span class="htag">—</span>')+'</div>'+
         insumosLine+
         '<div class="hpill-row">'+pillVendedor+pillCanal+'</div>'+
