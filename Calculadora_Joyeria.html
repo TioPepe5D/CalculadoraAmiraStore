@@ -455,7 +455,7 @@ function htmlVenta(){
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
     '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Web</option><option>Venta en oficina</option></select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
-    '<div class="campo"><label>Total de Venta ($)</label><input type="number" id="vTotal" placeholder="Ej: 45890" min="0"></div></div>'+
+    '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
       hCat('Cadena','🇨🇱','Cadena',450,405)+hCat('Micro','🇨🇱','Micro',650,570)+
       '<div class="cat"><div class="cat-h"><div class="cat-n">🇮🇹 Italy</div><div class="cat-p" id="p-Italy">$3.000/gr</div></div>'+
@@ -514,7 +514,7 @@ function setP(cat,val,btn){
 var KILERO_UNLOCKED=false;
 function kileroCondicion(){
   var totalGr=0;document.querySelectorAll('.cat-gr').forEach(function(i){totalGr+=parseFloat(i.value)||0;});
-  var totalVenta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
+  var totalVenta=parseMoneda((document.getElementById('vTotal')||{}).value);
   return totalGr>=500||totalVenta>=250000;
 }
 function setPKilero(cat,val,btn){
@@ -545,6 +545,13 @@ function handleFile(input){
 }
 
 function fmt(n){return '$'+Math.round(n).toLocaleString('es-CL');}
+function parseMoneda(s){return parseFloat(String(s||'').replace(/[^0-9-]/g,''))||0;}
+function fmtMonedaInput(el){
+  var raw=String(el.value||'').replace(/[^0-9]/g,'');
+  if(!raw){el.value='';calcular();return;}
+  el.value='$'+parseInt(raw,10).toLocaleString('es-CL');
+  calcular();
+}
 
 function calcular(){
   var costoOro=0,lineas=[];
@@ -556,7 +563,7 @@ function calcular(){
   });
   var costoIns=ins.reduce(function(a,b){return a+b.costo;},0);
   var totalC=costoOro+costoIns+1000;
-  var venta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
+  var venta=parseMoneda((document.getElementById('vTotal')||{}).value);
   var dist=getDist();
   var util=venta-totalC,diego=util*dist.pct.d,vend=util*dist.pct.v;
   var rv=document.getElementById('rV');if(rv)rv.textContent=fmt(venta);
@@ -607,7 +614,7 @@ function _resetForm(){
 function limpiar(){if(!confirm('¿Limpiar todos los datos?'))return;_resetForm();}
 
 function guardarVenta(){
-  var venta=parseFloat((document.getElementById('vTotal')||{}).value)||0;
+  var venta=parseMoneda((document.getElementById('vTotal')||{}).value);
   var cliente=((document.getElementById('vCliente')||{}).value||'').trim();
   if(venta<=0){toast('Ingresa el total de venta primero');return;}
   if(!cliente){toast('Ingresa el nombre del cliente');return;}
