@@ -457,7 +457,7 @@ function htmlVenta(){
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
     '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
-      hCat('Cadena','🇨🇱','Cadena',450,405)+hCat('Micro','🇨🇱','Micro',650,570)+
+      hCat('Cadena','🇨🇱','Cadena',450,400)+hCat('Micro','🇨🇱','Micro',650,550)+
       '<div class="cat"><div class="cat-h"><div class="cat-n">🇮🇹 Italy</div><div class="cat-p" id="p-Italy">$3.000/gr</div></div>'+
         '<div class="cat-i"><div><div class="cat-l">Gramos</div><input type="text" inputmode="decimal" class="cat-gr" data-cat="Italy" placeholder="0" oninput="this.value=this.value.replace(\',\',\'.\');calcular()"></div>'+
         '<div><div class="cat-l">$ por gramo</div><div class="precio-fijo">$3.000</div><input type="hidden" class="cat-pgr" data-cat="Italy" value="3000"></div></div></div>'+
@@ -599,7 +599,7 @@ function _resetForm(){
   document.querySelectorAll('input[type="number"],input[type="text"]').forEach(function(el){el.value='';});
   KILERO_UNLOCKED=false;
   var dKil=isDiegoUser();
-  var def=dKil?{Cadena:405,Micro:570,Italy:3000,GF18K:1500}:{Cadena:450,Micro:650,Italy:3000,GF18K:1600};
+  var def=dKil?{Cadena:400,Micro:550,Italy:3000,GF18K:1500}:{Cadena:450,Micro:650,Italy:3000,GF18K:1600};
   Object.keys(def).forEach(function(cat){
     var pgr=document.querySelector('.cat-pgr[data-cat="'+cat+'"]');if(pgr)pgr.value=def[cat];
     var btns=document.querySelectorAll('.precio-btn[data-cat="'+cat+'"]');
