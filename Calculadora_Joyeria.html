@@ -858,7 +858,19 @@ function renderRep(){
   var rangoLbl=gLabel(repPer,repOff);
   var titBase=rangoLbl+(nombreFiltro?' · '+nombreFiltro:'');
 
-  var porIntegrante='';
+  function repCard(title,st){
+    var pagar=st.tC+Math.max(0,st.tD);
+    return '<div class="reporte-card"><div class="reporte-t">'+title+'</div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Venta Total</span><span class="reporte-val gold">'+fmt(st.tV)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Costo Total</span><span class="reporte-val">'+fmt(st.tC)+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Vendedor)</span><span class="reporte-val" style="color:var(--ok)">'+fmt(Math.max(0,st.tVl))+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Empresa)</span><span class="reporte-val">'+fmt(Math.max(0,st.tD))+'</span></div>'+
+      '<div class="reporte-fila" style="border-top:2px solid var(--ac);margin-top:6px;padding-top:14px"><span class="reporte-lbl" style="font-weight:700;font-size:14px;color:var(--tx)">Total a Pagar</span><span class="reporte-val gold" style="font-size:19px">'+fmt(pagar)+'</span></div>'+
+      (st.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px;color:var(--mu);font-size:12px">Sin ventas en este período</div>':'')+
+    '</div>';
+  }
+
+  var perVendor='';
   if(isAdm&&!repUser){
     var byU={};
     h.forEach(function(v){
@@ -866,24 +878,8 @@ function renderRep(){
       if(!byU[uid])byU[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0};
       var c=comFor(v);byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=c.diego;byU[uid].tVl+=c.vendedor;
     });
-    var rows=Object.values(byU).sort(function(a,b){return b.tV-a.tV;});
-    porIntegrante=rows.length===0?'':
-      '<div class="reporte-card" style="margin-top:12px"><div class="reporte-t">👥 Por Integrante · '+rangoLbl+'</div>'+
-      rows.map(function(u){
-        return '<div class="reporte-fila" style="flex-direction:column;align-items:flex-start;gap:4px">'+
-          '<div style="display:flex;justify-content:space-between;width:100%;align-items:center">'+
-            '<span style="font-weight:700;font-size:14px;color:var(--tx)">'+u.name+'</span>'+
-            '<span class="reporte-val gold">'+fmt(u.tV)+'</span>'+
-          '</div>'+
-          '<div style="display:flex;gap:10px;font-size:11px;color:var(--mu);flex-wrap:wrap">'+
-            '<span>'+u.cnt+' venta'+(u.cnt===1?'':'s')+'</span>'+
-            '<span>Utilidad: '+fmt(u.tU)+'</span>'+
-            '<span style="color:var(--ac)">'+u.name+': '+fmt(u.tVl)+'</span>'+
-            (u.tD>0?'<span>Diego: '+fmt(u.tD)+'</span>':'')+
-          '</div>'+
-        '</div>';
-      }).join('')+
-      '</div>';
+    var rows=Object.values(byU).map(function(u){return {name:u.name,st:{tV:u.tV,tU:u.tU,tD:u.tD,tVl:u.tVl,tC:Math.max(0,u.tV-u.tU),cnt:u.cnt}};}).sort(function(a,b){return b.st.tV-a.st.tV;});
+    perVendor=rows.map(function(r){return repCard('👤 '+escSvg(r.name)+' · '+escSvg(rangoLbl),r.st);}).join('');
   }
 
   var memberFilter='';
@@ -910,15 +906,8 @@ function renderRep(){
       '<div class="rep-mini"><div class="v">'+fmt(s.tC)+'</div><div class="l">Costos</div></div>'+
       '<div class="rep-mini"><div class="v" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</div><div class="l">Utilidad</div></div>'+
     '</div>'+
-    '<div class="reporte-card"><div class="reporte-t">📊 '+titBase+'</div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Ventas totales</span><span class="reporte-val gold">'+fmt(s.tV)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Costo total</span><span class="reporte-val">'+fmt(s.tC)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad bruta</span><span class="reporte-val" style="color:'+(s.tU>=0?'var(--ok)':'var(--er)')+'">'+fmt(s.tU)+'</span></div>'+
-      (s.tD>0?'<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">Utilidad Diego</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tD))+'</span></div>':'')+
-      '<div class="reporte-fila" style="border-top:2px solid var(--bd2);margin-top:4px;padding-top:12px"><span class="reporte-lbl">'+(isAdm?'Total Vendedores':'Mi Utilidad')+'</span><span class="reporte-val gold">'+fmt(Math.max(0,s.tVl))+'</span></div>'+
-      (s.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px">Sin ventas en este período</div>':'')+
-    '</div>'+
-    porIntegrante;
+    repCard('📊 '+escSvg(titBase),s)+
+    perVendor;
 }
 
 var CHART_COLORS=['#d4af37','#7fb069','#5b9aa0','#c97c5d','#b07bac','#e8b04b','#6b9bd2','#a7c957'];
