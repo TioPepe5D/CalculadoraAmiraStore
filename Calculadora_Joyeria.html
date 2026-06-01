@@ -330,7 +330,7 @@ var hKil=false;
 var repUser='';
 var repOff=0;
 var gPer='mes',gUser='',gOff=0,gSel=null;
-var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.80,d:0.20},Diego:{v:1.00,d:0.00}};
+var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.80,d:0.20},Diego:{v:0.50,d:0.50}};
 function matchDist(name){
   var n=(name||'').trim().toLowerCase();
   if(!n)return{key:'Vendedor',pct:{v:0.60,d:0.40}};
@@ -363,7 +363,10 @@ function costoReal(v){
 function utilReal(v){return (v.totalVenta||0)-costoReal(v);}
 function comFor(v){
   var u=utilReal(v),pV,pD;
-  if(v.pctVendedor!==undefined&&v.pctDiego!==undefined){
+  var nameLow=String(v.userName||'').trim().toLowerCase();
+  if(nameLow==='diego'){
+    var dd=matchDist('diego');pV=dd.pct.v;pD=dd.pct.d;
+  } else if(v.pctVendedor!==undefined&&v.pctDiego!==undefined){
     pV=v.pctVendedor;pD=v.pctDiego;
   } else {
     var d=matchDist(v.userName||'');pV=d.pct.v;pD=d.pct.d;
@@ -927,7 +930,7 @@ function renderRep(){
 var CHART_COLORS=['#d4af37','#7fb069','#5b9aa0','#c97c5d','#b07bac','#e8b04b','#6b9bd2','#a7c957'];
 var COMI_COLORS=['#e3b341','#5cd6a1','#ff8a65','#ffa726','#ec4899','#22d3ee','#a78bfa','#60a5fa'];
 function fmtCorto(n){n=Math.round(n||0);var s=n<0?'-':'';n=Math.abs(n);if(n>=1e6)return s+'$'+(n/1e6).toFixed(1)+'M';if(n>=1e3)return s+'$'+Math.round(n/1e3)+'K';return s+'$'+n.toLocaleString('es-CL');}
-function fmtGr(g){g=g||0;return (g>=1000?(g/1000).toFixed(1)+'k':g.toFixed(g<10?1:0))+'g';}
+function fmtGr(g){g=g||0;if(g>=10)return Math.round(g).toLocaleString('es-CL')+' g';return (Math.round(g*10)/10)+' g';}
 function escSvg(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function gRange(per,off){
@@ -1072,24 +1075,20 @@ function renderG(){
     serB[i]+=utilReal(v);
   });
 
-  // Comisiones por persona
+  // Comisiones por persona — cada vendedor solo su propio vendedor share,
+  // la Empresa es una fila separada que junta todos los cortes (incluido Diego).
   var comisiones={};
-  function isDiego(n){return (n||'').trim().toLowerCase()==='diego';}
+  var empresaTotal=0,empresaVentas=0;
   h.forEach(function(v){
     var uid=v.userId||'?',nom=nicerName(v.userName);
-    if(!comisiones[uid])comisiones[uid]={name:nom,total:0,propias:0,cruzadas:0,ventas:0};
+    if(!comisiones[uid])comisiones[uid]={name:nom,total:0,propias:0,ventas:0,isEmpresa:false};
     comisiones[uid].ventas++;
     var c=comFor(v);
     comisiones[uid].propias+=c.vendedor;
     comisiones[uid].total+=c.vendedor;
-    if(c.diego>0){
-      var diegoUid=null;
-      Object.keys(members).forEach(function(uk){if(isDiego(members[uk]))diegoUid=uk;});
-      diegoUid=diegoUid||'__diego__';
-      if(!comisiones[diegoUid])comisiones[diegoUid]={name:'Diego',total:0,propias:0,cruzadas:0,ventas:0};
-      if(diegoUid!==uid){comisiones[diegoUid].cruzadas+=c.diego;comisiones[diegoUid].total+=c.diego;}
-    }
+    if(c.diego>0){empresaTotal+=c.diego;empresaVentas++;}
   });
+  if(empresaTotal>0.5){comisiones['__empresa__']={name:'Empresa',total:empresaTotal,propias:empresaTotal,ventas:empresaVentas,isEmpresa:true};}
   var totalEquipo=Object.values(comisiones).reduce(function(s,c){return s+c.total;},0);
   var comList=Object.values(comisiones).filter(function(c){return c.total>0.5;}).sort(function(a,b){return b.total-a.total;});
 
@@ -1150,13 +1149,13 @@ function renderG(){
 
   var comisHtml=comList.length===0?'<div style="color:var(--mu);font-size:12px;padding:8px 0">Sin comisiones</div>':
     comList.map(function(c,i){
-      var col=COMI_COLORS[i%COMI_COLORS.length];
+      var col=c.isEmpresa?'#d4af37':COMI_COLORS[i%COMI_COLORS.length];
       var pct=totalEquipo>0?(c.total/totalEquipo*100):0;
-      var sub=c.cruzadas>0
-        ?'<span>Propias <b>'+fmt(c.propias)+'</b></span><span>Cruzadas <b>'+fmt(c.cruzadas)+'</b></span>'
+      var sub=c.isEmpresa
+        ?'<span>De '+c.ventas+' venta'+(c.ventas===1?'':'s')+' con corte</span>'
         :'<span>'+c.ventas+' venta'+(c.ventas===1?'':'s')+'</span><span>Vendedor <b>'+fmt(c.propias)+'</b></span>';
       return '<div class="com-row">'+
-        '<div class="com-head"><span class="com-name">'+escSvg(c.name)+'</span><span><span class="com-pct">'+pct.toFixed(0)+'%</span><span class="com-amt" style="color:'+col+'">'+fmt(c.total)+'</span></span></div>'+
+        '<div class="com-head"><span class="com-name">'+(c.isEmpresa?'🏢 ':'')+escSvg(c.name)+'</span><span><span class="com-pct">'+pct.toFixed(0)+'%</span><span class="com-amt" style="color:'+col+'">'+fmt(c.total)+'</span></span></div>'+
         '<div class="com-bar"><i style="width:'+Math.max(2,pct)+'%;background:'+col+'"></i></div>'+
         '<div class="com-sub">'+sub+'</div>'+
       '</div>';
