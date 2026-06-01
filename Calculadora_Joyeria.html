@@ -355,8 +355,14 @@ function nicerName(n){
   var clean=s.split(/[.\d_@\s-]/)[0];
   return clean.charAt(0).toUpperCase()+clean.slice(1).toLowerCase();
 }
+function costoReal(v){
+  var oro=(v.lineas||[]).reduce(function(s,l){return s+((l.gr||0)*(l.pgr||0));},0);
+  var ins=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
+  return oro+ins+1000;
+}
+function utilReal(v){return (v.totalVenta||0)-costoReal(v);}
 function comFor(v){
-  var u=v.utilidad||0,pV,pD;
+  var u=utilReal(v),pV,pD;
   if(v.pctVendedor!==undefined&&v.pctDiego!==undefined){
     pV=v.pctVendedor;pD=v.pctDiego;
   } else {
@@ -810,7 +816,7 @@ function descargarExcel(){
     function nc(n){return String(n||0).replace('.',',');}
     var costoIns=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
     var base=[v.fecha||'', v.hora||'', nc(gr.Cadena), nc(gr.Micro), nc(gr.Italy), nc(gr.GF18K), nc(costoIns), nc(v.totalVenta||0)];
-    var c=comFor(v);return isAdm?[nicerName(v.userName)].concat(base).concat([nc(v.utilidad||0),nc(c.diego),nc(c.vendedor)]):base;
+    var c=comFor(v);return isAdm?[nicerName(v.userName)].concat(base).concat([nc(utilReal(v)),nc(c.diego),nc(c.vendedor)]):base;
   });
   function esc(val){
     var s=String(val===null||val===undefined?'':val);
@@ -839,12 +845,15 @@ function repHoy(){repOff=0;renderRep();}
 function renderRep(){
   var el=document.getElementById('sReportes');if(!el)return;
   function stats(h){
-    var tV=0,tU=0,tD=0,tVl=0;
+    var tV=0,tU=0,tD=0,tVl=0,tC=0;
     h.forEach(function(v){
-      tV+=v.totalVenta||0;tU+=v.utilidad||0;
+      var venta=v.totalVenta||0;
+      var costo=costoReal(v);
+      var util=venta-costo;
+      tV+=venta;tC+=costo;tU+=util;
       var c=comFor(v);tD+=c.diego;tVl+=c.vendedor;
     });
-    return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:Math.max(0,tV-tU),cnt:h.length};
+    return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:tC,cnt:h.length};
   }
   var isAdm=window.__FB.isAdmin(fbUser.email);
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'},{k:'todo',ico:'∞',lbl:'Todo'}];
@@ -875,10 +884,11 @@ function renderRep(){
     var byU={};
     h.forEach(function(v){
       var uid=v.userId||'?';
-      if(!byU[uid])byU[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0};
-      var c=comFor(v);byU[uid].cnt++;byU[uid].tV+=v.totalVenta||0;byU[uid].tU+=v.utilidad||0;byU[uid].tD+=c.diego;byU[uid].tVl+=c.vendedor;
+      if(!byU[uid])byU[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0,tC:0};
+      var venta=v.totalVenta||0,costo=costoReal(v),util=venta-costo,c=comFor(v);
+      byU[uid].cnt++;byU[uid].tV+=venta;byU[uid].tC+=costo;byU[uid].tU+=util;byU[uid].tD+=c.diego;byU[uid].tVl+=c.vendedor;
     });
-    var rows=Object.values(byU).map(function(u){return {name:u.name,st:{tV:u.tV,tU:u.tU,tD:u.tD,tVl:u.tVl,tC:Math.max(0,u.tV-u.tU),cnt:u.cnt}};}).sort(function(a,b){return b.st.tV-a.st.tV;});
+    var rows=Object.values(byU).map(function(u){return {name:u.name,st:{tV:u.tV,tU:u.tU,tD:u.tD,tVl:u.tVl,tC:u.tC,cnt:u.cnt}};}).sort(function(a,b){return b.st.tV-a.st.tV;});
     perVendor=rows.map(function(r){return repCard('👤 '+escSvg(r.name)+' · '+escSvg(rangoLbl),r.st);}).join('');
   }
 
@@ -1040,7 +1050,7 @@ function renderG(){
   var h=gUser?base.filter(function(v){return v.userId===gUser;}):base;
 
   var tV=0,tU=0;
-  h.forEach(function(v){tV+=v.totalVenta||0;tU+=v.utilidad||0;});
+  h.forEach(function(v){tV+=v.totalVenta||0;tU+=utilReal(v);});
   var margen=tV>0?(tU/tV*100):0;
 
   var memberFilter='';
@@ -1055,7 +1065,7 @@ function renderG(){
     var k=buckets.keyOf(v),i=buckets.keys.indexOf(k);
     if(i<0)return;
     serA[i]+=v.totalVenta||0;
-    serB[i]+=v.utilidad||0;
+    serB[i]+=utilReal(v);
   });
 
   // Comisiones por persona
@@ -1109,7 +1119,7 @@ function renderG(){
   if(h.length>0&&gSel!==null){
     var selKey=buckets.keys[gSel];
     var selItems=h.filter(function(v){return buckets.keyOf(v)===selKey;});
-    var dV=0,dU=0;selItems.forEach(function(v){dV+=v.totalVenta||0;dU+=v.utilidad||0;});
+    var dV=0,dU=0;selItems.forEach(function(v){dV+=v.totalVenta||0;dU+=utilReal(v);});
     var dMargen=dV>0?(dU/dV*100):0;
     var dTicket=selItems.length?dV/selItems.length:0;
     var dUsers={};selItems.forEach(function(v){var uid=v.userId||'?',nom=nicerName(v.userName);if(!dUsers[uid])dUsers[uid]={name:nom,n:0,t:0};dUsers[uid].n++;dUsers[uid].t+=v.totalVenta||0;});
@@ -1220,25 +1230,26 @@ function recalcularComisiones(){
   if(!window.__FB.isAdmin(fbUser.email)){toast('Solo admin');return;}
   if(!ventas.length){toast('Sin ventas');return;}
   var afectadas=ventas.filter(function(v){
-    var c=comFor(v);
+    var u=utilReal(v),c=comFor(v);
+    var du=Math.abs(u-(v.utilidad||0))>1;
     var dv=Math.abs(c.vendedor-(v.vendedor||0))>1;
     var dd=Math.abs(c.diego-(v.diego||0))>1;
-    return dv||dd;
+    return du||dv||dd;
   });
-  if(!afectadas.length){toast('Comisiones ya están al día');return;}
-  if(!confirm('Se recalcularán '+afectadas.length+' venta(s) ajustando vendedor/diego a partir de utilidad × %.\n\n¿Continuar?'))return;
+  if(!afectadas.length){toast('Costos y comisiones ya están al día');return;}
+  if(!confirm('Se recalcularán '+afectadas.length+' venta(s):\n• Utilidad = Venta − (Oro + Insumos + $1.000 empaque)\n• Vendedor/Empresa = Utilidad × %\n\n¿Continuar?'))return;
   var btn=document.getElementById('btnRecCom');if(btn){btn.disabled=true;btn.textContent='Recalculando…';}
   var ok=0,err=0;
   var tasks=afectadas.map(function(v){
-    var c=comFor(v);
+    var u=utilReal(v),c=comFor(v);
     return window.__FB.updateVenta(v.id,{
-      vendedor:c.vendedor,diego:c.diego,
+      utilidad:u,vendedor:c.vendedor,diego:c.diego,
       pctVendedor:c.pV,pctDiego:c.pD,
       recalcComAt:Date.now()
     }).then(function(){ok++;},function(){err++;});
   });
   Promise.all(tasks).then(function(){
-    if(btn){btn.disabled=false;btn.textContent='⚙️ Recalcular comisiones';}
+    if(btn){btn.disabled=false;btn.textContent='⚙️ Recalcular utilidad y comisiones';}
     toastOk('✓ '+ok+' venta(s) actualizadas'+(err?' · '+err+' con error':''));
   });
 }
@@ -1326,8 +1337,8 @@ function loadAdmin(t){
           '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔧 Mantenimiento</div>'+
           '<button class="btn-s" id="btnMigrar" onclick="migrarCostosMayo()">🔧 Migrar costos (desde 1-may)</button>'+
           '<p class="nota" style="margin-top:6px">Aplica los nuevos precios kilero a Cadena/Micro y recalcula GF 18 K (Oro) en todas las ventas desde 1-may.</p>'+
-          '<button class="btn-s" id="btnRecCom" onclick="recalcularComisiones()" style="margin-top:10px">⚙️ Recalcular comisiones</button>'+
-          '<p class="nota" style="margin-top:6px">Reescribe los campos vendedor/Diego de cada venta como utilidad × %. Útil si hay diferencias entre Reportes y Gráficos.</p>'+
+          '<button class="btn-s" id="btnRecCom" onclick="recalcularComisiones()" style="margin-top:10px">⚙️ Recalcular utilidad y comisiones</button>'+
+          '<p class="nota" style="margin-top:6px">Recalcula utilidad como Venta − (Oro + Insumos + $1.000 empaque) y reparte vendedor/empresa según %. Corrige inconsistencias en datos viejos.</p>'+
         '</div>';
     }
   });
