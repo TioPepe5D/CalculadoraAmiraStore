@@ -323,6 +323,7 @@ var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,ca
 var hUser='';
 var hKil=false;
 var repUser='';
+var repOff=0;
 var gPer='mes',gUser='',gOff=0,gSel=null;
 var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.80,d:0.20},Diego:{v:1.00,d:0.00}};
 function matchDist(name){
@@ -839,20 +840,13 @@ function descargarExcel(){
   toast('✓ Archivo descargado');
 }
 
-function setRepPer(p){repPer=p;renderRep();}
+function setRepPer(p){repPer=p;repOff=0;renderRep();}
 function setRepUser(u){repUser=u;renderRep();}
+function repNav(d){repOff+=d;if(repOff>0)repOff=0;renderRep();}
+function repHoy(){repOff=0;renderRep();}
 
 function renderRep(){
   var el=document.getElementById('sReportes');if(!el)return;
-  function startOf(per){
-    var d=new Date();
-    if(per==='dia'){d.setHours(0,0,0,0);}
-    else if(per==='sem'){var day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);d=new Date(d.setDate(diff));d.setHours(0,0,0,0);}
-    else if(per==='mes'){d=new Date(d.getFullYear(),d.getMonth(),1);}
-    else{d=new Date(d.getFullYear(),0,1);}
-    return d.getTime();
-  }
-  function filtrar(per){var desde=startOf(per);return ventas.filter(function(v){return(v.at||0)>=desde;});}
   function stats(h){
     var tV=0,tU=0,tD=0,tVl=0;
     h.forEach(function(v){
@@ -863,14 +857,15 @@ function renderRep(){
   }
   var isAdm=window.__FB.isAdmin(fbUser.email);
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'}];
-  var titulos={dia:'Hoy',sem:'Esta Semana',mes:'Este Mes',ano:'Este Año'};
-  var hPer_=filtrar(repPer);
+  var rng=gRange(repPer,repOff);
+  var hPer_=ventas.filter(function(v){var t=v.at||0;return t>=rng.from&&t<=rng.to;});
   var members={};ventas.forEach(function(v){if(v.userId&&v.userName)members[v.userId]=v.userName;});
   if(repUser&&!members[repUser])repUser='';
   var h=repUser?hPer_.filter(function(v){return v.userId===repUser;}):hPer_;
   var s=stats(h);
   var nombreFiltro=repUser?(members[repUser]||''):'';
-  var titBase=titulos[repPer]+(nombreFiltro?' · '+nombreFiltro:'');
+  var rangoLbl=gLabel(repPer,repOff);
+  var titBase=rangoLbl+(nombreFiltro?' · '+nombreFiltro:'');
 
   var porIntegrante='';
   if(isAdm&&!repUser){
@@ -882,7 +877,7 @@ function renderRep(){
     });
     var rows=Object.values(byU).sort(function(a,b){return b.tV-a.tV;});
     porIntegrante=rows.length===0?'':
-      '<div class="reporte-card" style="margin-top:12px"><div class="reporte-t">👥 Por Integrante · '+titulos[repPer]+'</div>'+
+      '<div class="reporte-card" style="margin-top:12px"><div class="reporte-t">👥 Por Integrante · '+rangoLbl+'</div>'+
       rows.map(function(u){
         return '<div class="reporte-fila" style="flex-direction:column;align-items:flex-start;gap:4px">'+
           '<div style="display:flex;justify-content:space-between;width:100%;align-items:center">'+
@@ -906,10 +901,17 @@ function renderRep(){
     memberFilter='<div style="margin:10px 0"><div class="mes-lbl">Integrante</div><select class="mes-select" onchange="setRepUser(this.value)">'+mOpts+'</select></div>';
   }
 
+  var navHtml='<div class="g-nav">'+
+    '<button class="g-nav-btn" onclick="repNav(-1)" title="Anterior">‹</button>'+
+    '<div class="g-nav-info"><div class="g-nav-lbl">'+escSvg(rangoLbl)+'</div>'+(repOff!==0?'<button class="g-nav-hoy" onclick="repHoy()">Volver a hoy</button>':'')+'</div>'+
+    '<button class="g-nav-btn" onclick="repNav(1)" '+(repOff>=0?'disabled':'')+' title="Siguiente">›</button>'+
+  '</div>';
+
   el.innerHTML=
     '<div class="per-tabs">'+
       periodos.map(function(p){return '<button class="per-tab '+(repPer===p.k?'activo':'')+'" onclick="setRepPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
     '</div>'+
+    navHtml+
     memberFilter+
     '<div class="rep-resumen">'+
       '<div class="rep-mini"><div class="v">'+s.cnt+'</div><div class="l">Ventas</div></div>'+
