@@ -869,11 +869,15 @@ function renderRep(){
 
   function repCard(title,st){
     var pagar=st.tC+Math.max(0,st.tD);
+    var totUtil=st.tVl+st.tD;
+    var pctV=totUtil>0?Math.round(st.tVl/totUtil*100):0;
+    var pctE=totUtil>0?Math.round(st.tD/totUtil*100):0;
+    var pctTxt=function(p){return '<span style="font-size:10px;color:var(--mu);font-weight:500;margin-left:6px;letter-spacing:.5px">'+p+'%</span>';};
     return '<div class="reporte-card"><div class="reporte-t">'+title+'</div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Venta Total</span><span class="reporte-val gold">'+fmt(st.tV)+'</span></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Costo Total</span><span class="reporte-val">'+fmt(st.tC)+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Vendedor)</span><span class="reporte-val" style="color:var(--ok)">'+fmt(Math.max(0,st.tVl))+'</span></div>'+
-      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Empresa)</span><span class="reporte-val">'+fmt(Math.max(0,st.tD))+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Vendedor)'+(totUtil>0?pctTxt(pctV):'')+'</span><span class="reporte-val" style="color:var(--ok)">'+fmt(Math.max(0,st.tVl))+'</span></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Empresa)'+(totUtil>0?pctTxt(pctE):'')+'</span><span class="reporte-val">'+fmt(Math.max(0,st.tD))+'</span></div>'+
       '<div class="reporte-fila" style="border-top:2px solid var(--ac);margin-top:6px;padding-top:14px"><span class="reporte-lbl" style="font-weight:700;font-size:14px;color:var(--tx)">Total a Pagar</span><span class="reporte-val gold" style="font-size:19px">'+fmt(pagar)+'</span></div>'+
       (st.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px;color:var(--mu);font-size:12px">Sin ventas en este período</div>':'')+
     '</div>';
