@@ -26,7 +26,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:var(--bf);min-height:100vh;padding-bottom:60px;transition:background .4s,color .4s}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.35}
-.wrap{max-width:480px;margin:0 auto;padding:0 16px}
+.wrap{max-width:480px;margin:0 auto;padding:14px 16px 0}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .login-card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:32px 24px;width:100%;max-width:380px}
 .login-logo{text-align:center;margin-bottom:24px}
@@ -34,12 +34,18 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .login-logo p{font-size:12px;color:var(--mu);margin-top:4px;letter-spacing:1px;text-transform:uppercase}
 .login-err{background:rgba(224,112,112,.15);border:1px solid var(--er);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--er);margin-bottom:14px;display:none}
 .login-err.show{display:block}
-.tema-barra{background:var(--sf);border-bottom:1px solid var(--bd);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:100}
-.tema-actual{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:6px}
-.tema-actual strong{color:var(--ac)}
-.btn-tema{background:var(--sf2);border:1.5px solid var(--bd2);border-radius:20px;padding:6px 14px;font-size:12px;font-family:var(--bf);color:var(--mu);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;white-space:nowrap}
+.app-head{background:var(--sf);border-bottom:1px solid var(--bd);padding:9px 14px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.app-head-l{display:flex;flex-direction:column;line-height:1.1;min-width:0;flex:1}
+.app-head-t{font-family:var(--hf);font-size:16px;font-weight:800;color:var(--tx);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-head-t span{color:var(--ac)}
+.app-head-s{font-size:10px;color:var(--mu);margin-top:2px;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-head-s b{color:var(--ac);font-weight:600}
+.app-head-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.btn-tema{background:var(--sf2);border:1px solid var(--bd2);border-radius:18px;padding:5px 11px;font-size:11px;font-family:var(--bf);color:var(--mu);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap;line-height:1}
 .btn-tema:hover{border-color:var(--ac);color:var(--ac)}
-.btn-logout{background:none;border:1px solid var(--bd2);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--mu);cursor:pointer;font-family:var(--bf);transition:all .2s}
+.btn-ico{background:var(--sf2);border:1px solid var(--bd2);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--mu);transition:all .15s;padding:0;line-height:1}
+.btn-ico:hover{border-color:var(--ac);color:var(--ac)}
+.btn-logout{background:none;border:1px solid var(--bd2);border-radius:14px;padding:5px 11px;font-size:11px;color:var(--mu);cursor:pointer;font-family:var(--bf);transition:all .15s;line-height:1}
 .btn-logout:hover{border-color:var(--er);color:var(--er)}
 .tema-cajon{background:var(--sf);border-bottom:1px solid var(--bd);overflow:hidden;max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
 .tema-cajon.abierto{max-height:340px}
@@ -48,11 +54,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .tema-btn:hover{border-color:var(--ac);color:var(--ac)}
 .tema-btn.activo{background:var(--ac);border-color:var(--ac);color:var(--bg);font-weight:700}
 .tema-btn .ico{font-size:18px;display:block;margin-bottom:3px}
-.header{text-align:center;padding:26px 16px;border-bottom:1px solid var(--bd);margin-bottom:20px}
-.header h1{font-family:var(--hf);font-size:clamp(20px,5vw,30px);font-weight:700;color:var(--tx);letter-spacing:-.5px}
-.header h1 span{color:var(--ac)}
-.header p{font-size:12px;color:var(--mu);margin-top:6px}
-.header-sub{font-size:11px;color:var(--ac);margin-top:4px;letter-spacing:.5px}
+.header{display:none}
 .sec{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:14px;transition:background .4s,border-color .4s}
 .sec-t{font-family:var(--hf);font-size:12px;font-weight:600;color:var(--ac);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .sec-t::after{content:'';flex:1;height:1px;background:var(--bd)}
@@ -467,11 +469,14 @@ function renderApp(){
   var isAdm=window.__FB.isAdmin(fbUser.email);
   var nom=profile?profile.name:fbUser.email.split('@')[0];
   document.getElementById('R').innerHTML=
-    '<div class="tema-barra">'+
-      '<div class="tema-actual">🎨 Tema: <strong id="nTema">Joyería</strong></div>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        (isAdm?'<button class="btn-logout" onclick="openAdmin()">👥</button>':'')+
-        '<button class="btn-tema" id="btnT" onclick="toggleCajon()">▾ Tema</button>'+
+    '<div class="app-head">'+
+      '<div class="app-head-l">'+
+        '<div class="app-head-t">Ventas <span>Personales</span></div>'+
+        '<div class="app-head-s">Joyería Aravena · <b>'+escSvg(nicerName(nom))+(isAdm?' · Admin':'')+'</b></div>'+
+      '</div>'+
+      '<div class="app-head-r">'+
+        (isAdm?'<button class="btn-ico" title="Admin" onclick="openAdmin()">👥</button>':'')+
+        '<button class="btn-tema" id="btnT" onclick="toggleCajon()">🎨 <span id="nTema">Joyería</span> ▾</button>'+
         '<button class="btn-logout" onclick="doLogout()">Salir</button>'+
       '</div>'+
     '</div>'+
@@ -484,7 +489,6 @@ function renderApp(){
       '</div>'+
     '</div>'+
     '<div class="wrap">'+
-      '<div class="header"><h1>Ventas <span>Personales</span></h1><p style="font-size:11px;color:var(--mu);margin-top:2px;letter-spacing:1px;text-transform:uppercase">Joyería Aravena</p><p class="header-sub">👤 '+nicerName(nom)+(isAdm?' · Admin':'')+'</p></div>'+
       '<div class="tabs">'+
         '<button class="tab-btn activo" id="tabVenta"     onclick="showTab(\'venta\')">📝 Venta</button>'+
         '<button class="tab-btn"        id="tabHistorial" onclick="showTab(\'historial\')">🕒 Historial</button>'+
@@ -501,14 +505,13 @@ function renderApp(){
 
 function tBtn(t,ico,nom,extra){return '<button class="tema-btn '+(extra||'')+'" onclick="setTema(\''+t+'\',this,\''+nom+'\')"><span class="ico">'+ico+'</span><span class="nom">'+nom+'</span></button>';}
 
-function toggleCajon(){cajon=!cajon;var p=document.getElementById('tPanel'),b=document.getElementById('btnT');if(p)p.classList.toggle('abierto',cajon);if(b)b.textContent=(cajon?'▴':'▾')+' Tema';}
+function toggleCajon(){cajon=!cajon;var p=document.getElementById('tPanel');if(p)p.classList.toggle('abierto',cajon);}
 function setTema(t,btn,lbl){
   document.body.setAttribute('data-theme',t);
   document.querySelectorAll('.tema-btn').forEach(function(b){b.classList.remove('activo');});
   btn.classList.add('activo');
   var n=document.getElementById('nTema');if(n)n.textContent=lbl;
-  cajon=false;var p=document.getElementById('tPanel'),b=document.getElementById('btnT');
-  if(p)p.classList.remove('abierto');if(b)b.textContent='▾ Tema';
+  cajon=false;var p=document.getElementById('tPanel');if(p)p.classList.remove('abierto');
   try{localStorage.setItem('tA',t);localStorage.setItem('tL',lbl);}catch(e){}
 }
 function restTema(){
