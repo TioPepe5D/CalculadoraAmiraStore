@@ -320,6 +320,7 @@ select option{background:var(--sf2);color:var(--tx)}
 .best-lbl{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mu);font-weight:700;margin-bottom:5px}
 .best-val{font-family:var(--hf);font-size:16px;font-weight:800;color:var(--ac);line-height:1.2}
 .best-sub{font-size:11px;color:var(--mu);margin-top:4px}
+.best-monto{font-family:var(--hf);font-size:14px;font-weight:800;color:var(--ok);margin-top:6px}
 .stat-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin-bottom:6px}
 .stat-name{font-weight:600;font-size:14px}
 .stat-sub{font-size:11px;color:var(--mu);margin-top:3px}
@@ -1497,12 +1498,12 @@ function renderG(){
 
   // Mejor día y mejor hora (según filtro)
   var diasNom=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-  var porDia=[0,0,0,0,0,0,0];
-  var porHora={};
+  var porDia=[0,0,0,0,0,0,0],montoDia=[0,0,0,0,0,0,0];
+  var porHora={},montoHora={};
   h.forEach(function(v){
-    var d=new Date(v.at||0);
-    porDia[(d.getDay()+6)%7]++;
-    var hh=d.getHours();porHora[hh]=(porHora[hh]||0)+1;
+    var d=new Date(v.at||0),di=(d.getDay()+6)%7,hh=d.getHours(),mt=v.totalVenta||0;
+    porDia[di]++;montoDia[di]+=mt;
+    porHora[hh]=(porHora[hh]||0)+1;montoHora[hh]=(montoHora[hh]||0)+mt;
   });
   var mejorDiaIdx=-1,mejorDiaCnt=0;
   porDia.forEach(function(c,i){if(c>mejorDiaCnt){mejorDiaCnt=c;mejorDiaIdx=i;}});
@@ -1515,8 +1516,8 @@ function renderG(){
   } else {
     heatHtml=
       '<div class="best-grid">'+
-        '<div class="best-card"><div class="best-ico">📅</div><div class="best-lbl">Mejor día</div><div class="best-val">'+(mejorDiaIdx>=0?diasNom[mejorDiaIdx]:'—')+'</div><div class="best-sub">'+mejorDiaCnt+' venta'+(mejorDiaCnt===1?'':'s')+'</div></div>'+
-        '<div class="best-card"><div class="best-ico">🕐</div><div class="best-lbl">Mejor hora</div><div class="best-val">'+(mejorHora>=0?rangoHora(mejorHora):'—')+'</div><div class="best-sub">'+mejorHoraCnt+' venta'+(mejorHoraCnt===1?'':'s')+'</div></div>'+
+        '<div class="best-card"><div class="best-ico">📅</div><div class="best-lbl">Mejor día</div><div class="best-val">'+(mejorDiaIdx>=0?diasNom[mejorDiaIdx]:'—')+'</div><div class="best-sub">'+mejorDiaCnt+' venta'+(mejorDiaCnt===1?'':'s')+'</div><div class="best-monto">'+fmt(mejorDiaIdx>=0?montoDia[mejorDiaIdx]:0)+'</div></div>'+
+        '<div class="best-card"><div class="best-ico">🕐</div><div class="best-lbl">Mejor hora</div><div class="best-val">'+(mejorHora>=0?rangoHora(mejorHora):'—')+'</div><div class="best-sub">'+mejorHoraCnt+' venta'+(mejorHoraCnt===1?'':'s')+'</div><div class="best-monto">'+fmt(mejorHora>=0?montoHora[mejorHora]:0)+'</div></div>'+
       '</div>';
   }
 
