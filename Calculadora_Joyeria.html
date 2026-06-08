@@ -140,7 +140,10 @@ select option{background:var(--sf2);color:var(--tx)}
 .htag.kilero i{color:#e8b04b;opacity:.8}
 .htag .kt{display:inline-block;background:#e8b04b;color:#1a1a1a;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:4px;letter-spacing:.5px}
 .kbadge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#e8b04b,#c9913a);color:#1a1a1a;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;text-shadow:0 1px 0 rgba(255,255,255,.2)}
+.ebadge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#5cb8c8,#3d8e9e);color:#0f1a1c;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;text-shadow:0 1px 0 rgba(255,255,255,.2)}
 .hventa.kilero{border-color:rgba(232,176,75,.45);box-shadow:inset 0 0 0 1px rgba(232,176,75,.10)}
+.hventa.empresa{border-color:rgba(92,184,200,.55);box-shadow:inset 0 0 0 1px rgba(92,184,200,.12)}
+.hventa.empresa.kilero{border-color:rgba(140,180,80,.55);box-shadow:inset 0 0 0 1px rgba(140,180,80,.15)}
 .kfil-btn{background:transparent;border:1.5px solid rgba(232,176,75,.45);color:#e8b04b;font-family:var(--bf);font-size:12px;font-weight:700;letter-spacing:.5px;padding:8px 14px;border-radius:22px;cursor:pointer;transition:all .15s}
 .kfil-btn:hover{background:rgba(232,176,75,.08)}
 .kfil-btn.activo{background:linear-gradient(135deg,#e8b04b,#c9913a);color:#1a1a1a;border-color:transparent}
@@ -151,6 +154,8 @@ select option{background:var(--sf2);color:var(--tx)}
 .kseg button.activo{color:var(--bg);background:var(--ac);box-shadow:0 1px 4px rgba(110,170,210,.35)}
 .kseg button.kilero.activo{background:linear-gradient(135deg,#e8b04b,#c9913a);color:#1a1a1a;box-shadow:0 1px 4px rgba(232,176,75,.35)}
 .kseg button.normal.activo{background:#7fb069;color:#1a1a1a;box-shadow:0 1px 4px rgba(127,176,105,.35)}
+.kseg button.empresa.activo{background:linear-gradient(135deg,#5cb8c8,#3d8e9e);color:#0f1a1c;box-shadow:0 1px 4px rgba(92,184,200,.35)}
+.kseg button.vendedor.activo{background:#9aa7d8;color:#1a1a1a;box-shadow:0 1px 4px rgba(154,167,216,.35)}
 .hpill-row{display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap}
 .hpill{flex:1;min-width:90px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:24px;padding:6px 10px}
 .hpill-circ{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
@@ -412,6 +417,7 @@ window.__FB = {
 var U=undefined,fbUser=U,profile=null,unsub=null,ventas=[],ins=[],imgUrl=null,cajon=false,tab='venta',aTab='u',repPer='dia';
 var hUser='';
 var hKil='todas';
+var hPagoFilt='todos';
 var repUser='';
 var repOff=0;
 var gPer='mes',gUser='',gOff=0,gSel=null;
@@ -996,6 +1002,11 @@ function renderH(){
       '<button class="normal'+(hKil==='normal'?' activo':'')+'" onclick="setHKil(\'normal\')">Normal</button>'+
       '<button class="kilero'+(hKil==='kilero'?' activo':'')+'" onclick="setHKil(\'kilero\')">🏷 Kilero</button>'+
     '</div></div>'+
+    '<div class="kseg-wrap"><div class="kseg">'+
+      '<button class="todas'+(hPagoFilt==='todos'?' activo':'')+'" onclick="setHPagoFilt(\'todos\')">Todos pagos</button>'+
+      '<button class="empresa'+(hPagoFilt==='empresa'?' activo':'')+'" onclick="setHPagoFilt(\'empresa\')">🏢 Empresa</button>'+
+      '<button class="vendedor'+(hPagoFilt==='vendedor'?' activo':'')+'" onclick="setHPagoFilt(\'vendedor\')">Vendedor</button>'+
+    '</div></div>'+
     '<div class="per-tabs">'+
       periodos.map(function(p){return '<button class="per-tab '+(hPer===p.k?'activo':'')+'" onclick="setHPer(\''+p.k+'\')">'+p.ico+'<br>'+p.lbl+'</button>';}).join('')+
     '</div>'+
@@ -1011,11 +1022,14 @@ function renderH(){
 }
 
 function setHKil(v){hKil=v||'todas';renderH();}
+function setHPagoFilt(v){hPagoFilt=v||'todos';renderH();}
 function renderHLista(){
   var q=((document.getElementById('hBus')||{}).value||'').toLowerCase();
   var hBase=hFiltrar();
   if(hUser)hBase=hBase.filter(function(v){return v.userId===hUser;});
   if(hKil==='kilero')hBase=hBase.filter(ventaTieneKilero);
+  if(hPagoFilt==='empresa')hBase=hBase.filter(function(v){return (v.pagoA||'vendedor')==='empresa';});
+  else if(hPagoFilt==='vendedor')hBase=hBase.filter(function(v){return (v.pagoA||'vendedor')!=='empresa';});
   else if(hKil==='normal')hBase=hBase.filter(function(v){return !ventaTieneKilero(v);});
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
   var ttv=0;
@@ -1072,12 +1086,14 @@ function renderHLista(){
       var pillVendedor='<div class="hpill"><div class="hpill-circ" style="background:'+avatarColor(nom)+'">'+initial(nom)+'</div><div class="hpill-info"><span class="l">Vendedor</span><span class="v">'+escSvg(nom)+'</span></div></div>';
       var pillCanal=vPorLbl!=='—'?'<div class="hpill"><div class="hpill-circ" style="background:#5b9aa0">📦</div><div class="hpill-info"><span class="l">Canal</span><span class="v">'+escSvg(canalShown)+'</span></div></div>':'';
       var kileroChip=ventaTieneKilero(v)?'<span class="kbadge">🏷 KILERO</span>':'';
+      var pagoEmp=(v.pagoA||'vendedor')==='empresa';
+      var empChip=pagoEmp?'<span class="ebadge">🏢 EMPRESA</span>':'';
       var cerrado=estaCerrado(v.at);
       var lockChip=cerrado?'<span class="lockchip" title="Período cerrado">🔒</span>':'';
       var editable=ventaEditable(v);
       var fechaLbl=g.lbl==='HOY'?'Hoy':g.lbl==='AYER'?'Ayer':(v.fecha||'');
-      return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+(cerrado?' cerrada':'')+'">'+
-        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+lockChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
+      return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+(pagoEmp?' empresa':'')+(cerrado?' cerrada':'')+'">'+
+        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+empChip+lockChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
         '<div class="hitems">'+(lineas||insumos?(lineas+insumos):'<div class="hitem"><div class="hitem-l"><span class="hitem-nom">—</span></div></div>')+'</div>'+
         '<div class="hpill-row">'+pillVendedor+pillCanal+'</div>'+
         '<div class="hventa-bottom">'+
