@@ -739,10 +739,14 @@ function calcular(){
   var por=(document.getElementById('vPor')||{}).value||'';
   var cli=((document.getElementById('vCliente')||{}).value||'').trim()||'—';
   var porLabel=por==='Venta en oficina'?'Oficina':por;
+  var pagoA=(document.getElementById('vPagoA')||{}).value||'vendedor';
+  var nomVendMsg=nicerName((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'Vendedor');
+  var pagoALbl=pagoA==='empresa'?'Empresa':nomVendMsg;
   var msg=(porLabel==='Oficina'?'Venta Presencial':'Venta Por '+porLabel)+'\nNombre: '+cli+'\n\n';
   lineas.forEach(function(l){msg+=l.gr+' | '+EN[l.cat]+' '+(EE[l.cat]||'')+(esKileroLinea(l)?' (Kilero)':'')+'\n';});
   ins.forEach(function(x){msg+=fmt(x.costo)+' | '+x.desc+' 💎\n';});
   if(venta>0)msg+='\nVenta: '+fmt(venta);
+  msg+='\nPagó a: '+pagoALbl;
   var mb=document.getElementById('mBox');if(mb)mb.textContent=msg;
 }
 
