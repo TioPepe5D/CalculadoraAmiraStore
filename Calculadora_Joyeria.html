@@ -1513,12 +1513,10 @@ function renderG(){
   if(h.length===0){
     heatHtml='<div style="text-align:center;color:var(--mu);padding:16px;font-size:12px">Sin datos en este período</div>';
   } else {
-    var pctDia=h.length>0?Math.round(mejorDiaCnt/h.length*100):0;
-    var pctHora=h.length>0?Math.round(mejorHoraCnt/h.length*100):0;
     heatHtml=
       '<div class="best-grid">'+
-        '<div class="best-card"><div class="best-ico">📅</div><div class="best-lbl">Mejor día</div><div class="best-val">'+(mejorDiaIdx>=0?diasNom[mejorDiaIdx]:'—')+'</div><div class="best-sub">'+mejorDiaCnt+' venta'+(mejorDiaCnt===1?'':'s')+' · '+pctDia+'%</div></div>'+
-        '<div class="best-card"><div class="best-ico">🕐</div><div class="best-lbl">Mejor hora</div><div class="best-val">'+(mejorHora>=0?rangoHora(mejorHora):'—')+'</div><div class="best-sub">'+mejorHoraCnt+' venta'+(mejorHoraCnt===1?'':'s')+' · '+pctHora+'%</div></div>'+
+        '<div class="best-card"><div class="best-ico">📅</div><div class="best-lbl">Mejor día</div><div class="best-val">'+(mejorDiaIdx>=0?diasNom[mejorDiaIdx]:'—')+'</div><div class="best-sub">'+mejorDiaCnt+' venta'+(mejorDiaCnt===1?'':'s')+'</div></div>'+
+        '<div class="best-card"><div class="best-ico">🕐</div><div class="best-lbl">Mejor hora</div><div class="best-val">'+(mejorHora>=0?rangoHora(mejorHora):'—')+'</div><div class="best-sub">'+mejorHoraCnt+' venta'+(mejorHoraCnt===1?'':'s')+'</div></div>'+
       '</div>';
   }
 
