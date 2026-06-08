@@ -590,9 +590,9 @@ function htmlVenta(){
   var nomVend=nicerName((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'Vendedor');
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
     '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Oficina</option></select></div>'+
+    '<div class="campo"><label>Pagó A</label><select id="vPagoA"><option value="vendedor">'+escSvg(nomVend)+'</option><option value="empresa">Empresa</option></select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
-    '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div>'+
-    '<div class="campo"><label>Pagó A</label><select id="vPagoA"><option value="vendedor">'+escSvg(nomVend)+'</option><option value="empresa">Empresa</option></select></div></div>'+
+    '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
       hCat('Cadena','🇨🇱','Cadena',450,405)+hCat('Micro','🇨🇱','Micro',650,550)+
       '<div class="cat"><div class="cat-h"><div class="cat-n">🇮🇹 Italy</div><div class="cat-p" id="p-Italy">$3.000/gr</div></div>'+
@@ -861,9 +861,9 @@ function editarVenta(id){
   ov.innerHTML='<div class="admin-modal" style="max-width:480px">'+
     '<div class="admin-head"><h3>✏️ Editar venta</h3><button class="btn-logout" onclick="cerrarEditor()">✕</button></div>'+
     '<div class="admin-body">'+
-      '<div class="edit-row"><label>Cliente</label><input type="text" id="eCliente" value="'+escSvg(v.cliente||'')+'" oninput="edCalc()"></div>'+
       '<div class="edit-row"><label>Canal</label><select id="eCanal">'+canalOpts+'</select></div>'+
       '<div class="edit-row"><label>Pagó A</label><select id="ePagoA">'+pagoOpts+'</select></div>'+
+      '<div class="edit-row"><label>Cliente</label><input type="text" id="eCliente" value="'+escSvg(v.cliente||'')+'" oninput="edCalc()"></div>'+
       '<div class="edit-row"><label>Total $</label><input type="text" inputmode="numeric" id="eTotal" value="$'+(v.totalVenta||0).toLocaleString('es-CL')+'" oninput="edFmtMoney(this);edCalc()"></div>'+
       '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin:14px 0 6px">Categorías</div>'+
       catsHtml+
