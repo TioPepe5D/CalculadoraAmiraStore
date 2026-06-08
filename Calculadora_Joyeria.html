@@ -742,8 +742,9 @@ function calcular(){
   var pagoA=(document.getElementById('vPagoA')||{}).value||'vendedor';
   var nomVendMsg=nicerName((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'Vendedor');
   var pagoALbl=pagoA==='empresa'?'Empresa':nomVendMsg;
-  var msg=(porLabel==='Oficina'?'Venta Presencial':'Venta Por '+porLabel)+'\nPagó a: '+pagoALbl+'\nNombre: '+cli+'\n\n';
-  lineas.forEach(function(l){msg+=l.gr+' | '+EN[l.cat]+' '+(EE[l.cat]||'')+(esKileroLinea(l)?' (Kilero)':'')+'\n';});
+  var esKilero=lineas.some(esKileroLinea);
+  var msg=(porLabel==='Oficina'?'Venta Presencial':'Venta Por '+porLabel)+'\nPagó a: '+pagoALbl+'\nNombre: '+cli+'\nKilero: '+(esKilero?'Si':'No')+'\n\n';
+  lineas.forEach(function(l){msg+=l.gr+' | '+EN[l.cat]+' '+(EE[l.cat]||'')+'\n';});
   ins.forEach(function(x){msg+=fmt(x.costo)+' | '+x.desc+' 💎\n';});
   if(venta>0)msg+='\nVenta: '+fmt(venta);
   var mb=document.getElementById('mBox');if(mb)mb.textContent=msg;
