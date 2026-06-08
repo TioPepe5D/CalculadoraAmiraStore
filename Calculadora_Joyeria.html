@@ -587,10 +587,12 @@ function restTema(){
 }
 
 function htmlVenta(){
+  var nomVend=nicerName((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'Vendedor');
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
     '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Oficina</option></select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
-    '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div></div>'+
+    '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div>'+
+    '<div class="campo"><label>Pagó A</label><select id="vPagoA"><option value="vendedor">'+escSvg(nomVend)+'</option><option value="empresa">Empresa</option></select></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
       hCat('Cadena','🇨🇱','Cadena',450,405)+hCat('Micro','🇨🇱','Micro',650,550)+
       '<div class="cat"><div class="cat-h"><div class="cat-n">🇮🇹 Italy</div><div class="cat-p" id="p-Italy">$3.000/gr</div></div>'+
@@ -772,6 +774,7 @@ function _resetForm(){
     var pel=document.getElementById('p-'+cat);if(pel)pel.textContent='$'+def[cat].toLocaleString('es-CL')+'/gr';
   });
   var vp=document.getElementById('vPor');if(vp)vp.selectedIndex=0;
+  var vpa=document.getElementById('vPagoA');if(vpa)vpa.selectedIndex=0;
   ins=[];renderIns();imgUrl=null;calcular();
 }
 function limpiar(){if(!confirm('¿Limpiar todos los datos?'))return;_resetForm();}
@@ -798,6 +801,7 @@ function guardarVenta(){
     hora:ahora.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
     cliente:cliente,
     ventaPor:(document.getElementById('vPor')||{}).value||'',
+    pagoA:(document.getElementById('vPagoA')||{}).value||'vendedor',
     lineas:lineas,insumos:ins.slice(),
     totalVenta:venta,utilidad:util,
     diego:util*dist.pct.d,vendedor:util*dist.pct.v,
@@ -829,6 +833,9 @@ function editarVenta(id){
   var canalActual=(v.ventaPor||'').trim();if(canalActual==='Venta en oficina')canalActual='Oficina';if(canalActual==='Web')canalActual='WhatsApp';
   var canales=['WhatsApp','Instagram','Oficina'];
   var canalOpts=canales.map(function(c){return '<option'+(c===canalActual?' selected':'')+'>'+c+'</option>';}).join('');
+  var nomVendVenta=nicerName(v.userName||'Vendedor');
+  var pagoActual=v.pagoA||'vendedor';
+  var pagoOpts='<option value="vendedor"'+(pagoActual==='vendedor'?' selected':'')+'>'+escSvg(nomVendVenta)+'</option><option value="empresa"'+(pagoActual==='empresa'?' selected':'')+'>Empresa</option>';
   var cats=[
     {k:'Cadena',n:'🇨🇱 Cadena',norm:PRECIO_NORMAL.Cadena,kil:PRECIO_KILERO.Cadena},
     {k:'Micro',n:'🇨🇱 Micro',norm:PRECIO_NORMAL.Micro,kil:PRECIO_KILERO.Micro},
@@ -853,6 +860,7 @@ function editarVenta(id){
     '<div class="admin-body">'+
       '<div class="edit-row"><label>Cliente</label><input type="text" id="eCliente" value="'+escSvg(v.cliente||'')+'" oninput="edCalc()"></div>'+
       '<div class="edit-row"><label>Canal</label><select id="eCanal">'+canalOpts+'</select></div>'+
+      '<div class="edit-row"><label>Pagó A</label><select id="ePagoA">'+pagoOpts+'</select></div>'+
       '<div class="edit-row"><label>Total $</label><input type="text" inputmode="numeric" id="eTotal" value="$'+(v.totalVenta||0).toLocaleString('es-CL')+'" oninput="edFmtMoney(this);edCalc()"></div>'+
       '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin:14px 0 6px">Categorías</div>'+
       catsHtml+
@@ -915,9 +923,10 @@ function guardarEdicion(){
   if(!cli){toast('Ingresá nombre de cliente');return;}
   var d=edCalc();if(!d||d.venta<=0){toast('Ingresá total de venta');return;}
   var canal=document.getElementById('eCanal').value;
-  var prev={cliente:EDIT_VENTA.cliente,totalVenta:EDIT_VENTA.totalVenta,utilidad:EDIT_VENTA.utilidad,ventaPor:EDIT_VENTA.ventaPor};
+  var pagoA=(document.getElementById('ePagoA')||{}).value||'vendedor';
+  var prev={cliente:EDIT_VENTA.cliente,totalVenta:EDIT_VENTA.totalVenta,utilidad:EDIT_VENTA.utilidad,ventaPor:EDIT_VENTA.ventaPor,pagoA:EDIT_VENTA.pagoA};
   var patch={
-    cliente:cli,ventaPor:canal,
+    cliente:cli,ventaPor:canal,pagoA:pagoA,
     lineas:d.lineas,insumos:EDIT_INS.slice(),
     totalVenta:d.venta,utilidad:d.util,
     diego:d.util*d.pD,vendedor:d.util*d.pV,
@@ -1120,15 +1129,18 @@ function repHoy(){repOff=0;renderRep();}
 function renderRep(){
   var el=document.getElementById('sReportes');if(!el)return;
   function stats(h){
-    var tV=0,tU=0,tD=0,tVl=0,tC=0;
+    var tV=0,tU=0,tD=0,tVl=0,tC=0,payV=0,payE=0;
     h.forEach(function(v){
       var venta=v.totalVenta||0;
       var costo=costoReal(v);
       var util=venta-costo;
       tV+=venta;tC+=costo;tU+=util;
       var c=comFor(v);tD+=c.diego;tVl+=c.vendedor;
+      // pagoA: 'empresa' o 'vendedor' (default vendedor para retrocompat)
+      var pago=(v.pagoA||'vendedor');
+      if(pago==='empresa')payE+=venta;else payV+=venta;
     });
-    return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:tC,cnt:h.length};
+    return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:tC,payV:payV,payE:payE,cnt:h.length};
   }
   var isAdm=canViewAll();
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'},{k:'todo',ico:'∞',lbl:'Todo'}];
@@ -1150,8 +1162,12 @@ function renderRep(){
   var rangoLbl=gLabel(repPer,repOff);
   var titBase=rangoLbl+(nombreFiltro?' · '+nombreFiltro:'');
 
-  function repCard(title,st,prev){
-    var pagar=st.tC+Math.max(0,st.tD);
+  function repCard(title,st,prev,vendorName){
+    var pagosVend=st.payV||0;     // plata que recibió el vendedor
+    var pagosEmp=st.payE||0;       // plata que recibió la empresa
+    // Total a Pagar neto: lo que vendedor debe a empresa al cierre
+    // = (plata que recibió) − (lo que le corresponde quedarse)
+    var pagar=pagosVend-Math.max(0,st.tVl);
     var totUtil=st.tVl+st.tD;
     var pctV=totUtil>0?Math.round(st.tVl/totUtil*100):0;
     var pctE=totUtil>0?Math.round(st.tD/totUtil*100):0;
@@ -1162,13 +1178,18 @@ function renderRep(){
       var arr=d>=0?'▲':'▼';var col=d>=0?'var(--ok)':'var(--er)';
       return '<div style="font-size:10px;color:'+col+';font-weight:600;margin-top:2px">'+arr+' '+Math.abs(d).toFixed(0)+'% <span style="color:var(--mu);font-weight:400">vs ant.</span></div>';
     }
-    var prevPagar=prev?prev.tC+Math.max(0,prev.tD):0;
+    var prevPagar=prev?(prev.payV||0)-Math.max(0,prev.tVl):0;
+    var nomV=vendorName||'Vendedor';
+    var totalAPagarLbl=pagar>=0?'Total a Pagar':'A Cobrar';
+    var totalAPagarCol=pagar>=0?'var(--ac)':'var(--ok)';
     return '<div class="reporte-card"><div class="reporte-t">'+title+'</div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Venta Total</span><div style="text-align:right"><span class="reporte-val gold">'+fmt(st.tV)+'</span>'+deltaTxt(st.tV,prev&&prev.tV)+'</div></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Costo Total</span><div style="text-align:right"><span class="reporte-val">'+fmt(st.tC)+'</span>'+deltaTxt(st.tC,prev&&prev.tC)+'</div></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Vendedor)'+(totUtil>0?pctTxt(pctV):'')+'</span><div style="text-align:right"><span class="reporte-val" style="color:var(--ok)">'+fmt(Math.max(0,st.tVl))+'</span>'+deltaTxt(st.tVl,prev&&prev.tVl)+'</div></div>'+
       '<div class="reporte-fila"><span class="reporte-lbl">Utilidad (Empresa)'+(totUtil>0?pctTxt(pctE):'')+'</span><div style="text-align:right"><span class="reporte-val">'+fmt(Math.max(0,st.tD))+'</span>'+deltaTxt(st.tD,prev&&prev.tD)+'</div></div>'+
-      '<div class="reporte-fila" style="border-top:2px solid var(--ac);margin-top:6px;padding-top:14px"><span class="reporte-lbl" style="font-weight:700;font-size:14px;color:var(--tx)">Total a Pagar</span><div style="text-align:right"><span class="reporte-val gold" style="font-size:19px">'+fmt(pagar)+'</span>'+deltaTxt(pagar,prevPagar)+'</div></div>'+
+      '<div class="reporte-fila" style="border-top:1px dashed var(--bd2);margin-top:6px;padding-top:10px"><span class="reporte-lbl">Pagos a '+escSvg(nomV)+'</span><div style="text-align:right"><span class="reporte-val">'+fmt(pagosVend)+'</span></div></div>'+
+      '<div class="reporte-fila"><span class="reporte-lbl">Pagos a Empresa</span><div style="text-align:right"><span class="reporte-val">'+fmt(pagosEmp)+'</span></div></div>'+
+      '<div class="reporte-fila" style="border-top:2px solid var(--ac);margin-top:6px;padding-top:14px"><span class="reporte-lbl" style="font-weight:700;font-size:14px;color:var(--tx)">'+totalAPagarLbl+'</span><div style="text-align:right"><span class="reporte-val" style="font-size:19px;color:'+totalAPagarCol+'">'+fmt(Math.abs(pagar))+'</span>'+deltaTxt(pagar,prevPagar)+'</div></div>'+
       (st.cnt===0?'<div class="hrep-none" style="text-align:center;padding:12px;color:var(--mu);font-size:12px">Sin ventas en este período</div>':'')+
     '</div>';
   }
@@ -1179,19 +1200,21 @@ function renderRep(){
       var bu={};
       arr.forEach(function(v){
         var uid=v.userId||'?';
-        if(!bu[uid])bu[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0,tC:0};
+        if(!bu[uid])bu[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0,tC:0,payV:0,payE:0};
         var venta=v.totalVenta||0,costo=costoReal(v),util=venta-costo,c=comFor(v);
         bu[uid].cnt++;bu[uid].tV+=venta;bu[uid].tC+=costo;bu[uid].tU+=util;bu[uid].tD+=c.diego;bu[uid].tVl+=c.vendedor;
+        var pago=(v.pagoA||'vendedor');
+        if(pago==='empresa')bu[uid].payE+=venta;else bu[uid].payV+=venta;
       });
       return bu;
     }
     var byU=buildByU(h);
     var byUprev=prevS?buildByU(ventas.filter(function(v){var t=v.at||0;var rngP=gRange(repPer,repOff-1);return t>=rngP.from&&t<=rngP.to;})):{};
-    var rows=Object.values(byU).map(function(u){return {name:u.name,st:{tV:u.tV,tU:u.tU,tD:u.tD,tVl:u.tVl,tC:u.tC,cnt:u.cnt}};}).sort(function(a,b){return b.st.tV-a.st.tV;});
+    var rows=Object.values(byU).map(function(u){return {name:u.name,st:{tV:u.tV,tU:u.tU,tD:u.tD,tVl:u.tVl,tC:u.tC,cnt:u.cnt,payV:u.payV,payE:u.payE}};}).sort(function(a,b){return b.st.tV-a.st.tV;});
     perVendor=rows.map(function(r){
       var uidKey=Object.keys(byU).find(function(k){return byU[k].name===r.name;});
       var prev=uidKey&&byUprev[uidKey]?byUprev[uidKey]:null;
-      return repCard('👤 '+escSvg(r.name)+' · '+escSvg(rangoLbl),r.st,prev);
+      return repCard('👤 '+escSvg(r.name)+' · '+escSvg(rangoLbl),r.st,prev,r.name);
     }).join('');
   }
 
@@ -1227,7 +1250,7 @@ function renderRep(){
     navHtml+
     memberFilter+
     tickerR+
-    repCard('📊 '+escSvg(titBase),s,prevS)+
+    repCard('📊 '+escSvg(titBase),s,prevS,nombreFiltro||'Vendedor')+
     perVendor;
 }
 
