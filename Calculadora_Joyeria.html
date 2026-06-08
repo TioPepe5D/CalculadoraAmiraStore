@@ -296,15 +296,15 @@ select option{background:var(--sf2);color:var(--tx)}
 .admin-tab{padding:8px 14px;border-radius:8px 8px 0 0;border:1px solid var(--bd);border-bottom:none;font-size:12px;font-weight:600;background:transparent;color:var(--mu);cursor:pointer;font-family:var(--bf)}
 .admin-tab.activo{background:var(--sf2);color:var(--ac)}
 .admin-body{padding:14px 16px 20px}
-.user-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin-bottom:6px}
-.user-row-info{flex:1;min-width:0}
-.user-row-name{font-weight:600;font-size:14px}
+.user-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin-bottom:6px;min-width:0}
+.user-row-info{flex:1 1 0;min-width:0;overflow:hidden}
+.user-row-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .user-row-email{font-size:10px;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .role-badge{font-size:10px;padding:2px 8px;border:1px solid;border-radius:999px}
 .role-badge.admin{color:var(--ac);border-color:rgba(91,159,214,.4)}
 .role-badge.supervisor{color:#e8b04b;border-color:rgba(232,176,75,.4)}
 .role-badge.user{color:var(--mu);border-color:var(--bd)}
-.rol-select{background:var(--sf2);border:1px solid var(--bd2);color:var(--tx);border-radius:8px;padding:4px 6px;font-family:var(--bf);font-size:11px;outline:none;cursor:pointer}
+.rol-select{background:var(--sf2);border:1px solid var(--bd2);color:var(--tx);border-radius:8px;padding:4px 22px 4px 8px;font-family:var(--bf);font-size:11px;outline:none;cursor:pointer;flex-shrink:0;width:100px;appearance:none;-webkit-appearance:none;text-transform:capitalize}
 .aud-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
 .aud-row:last-child{border-bottom:none}
 .aud-ico{width:32px;height:32px;flex-shrink:0;background:var(--sf2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
@@ -436,7 +436,7 @@ function ventaEditable(v){
   return v.userId===fbUser.uid;
 }
 function bitacora(action,detalles){
-  try{window.__FB.logAudit({action:action,user:{uid:fbUser.uid,name:nicerName((profile&&profile.name)||fbUser.email),email:fbUser.email,role:userRole()},...detalles});}catch(e){}
+  try{var p=window.__FB.logAudit({action:action,user:{uid:fbUser.uid,name:nicerName((profile&&profile.name)||fbUser.email),email:fbUser.email,role:userRole()},...detalles});if(p&&p.catch)p.catch(function(e){console.warn('bitacora',e);});}catch(e){console.warn('bitacora',e);}
 }
 function matchDist(name){
   var n=(name||'').trim().toLowerCase();
@@ -1835,9 +1835,11 @@ function renderCierres(body){
     lista.map(function(m){
       var cerrado=mesesCerrados.indexOf(m)>=0;
       var d=new Date(m+'-01T12:00:00');
-      var lbl=d.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
-      return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+escSvg(lbl)+'</div><div class="user-row-email">'+m+'</div></div>'+
-        (cerrado?'<span class="role-badge admin">🔒 Cerrado</span><button class="btn-quitar" onclick="abrirMes(\''+m+'\')" title="Abrir">↻</button>':'<button class="btn-s" style="padding:6px 12px;font-size:11px" onclick="cerrarMes(\''+m+'\')">Cerrar</button>')+
+      var meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      var lbl=meses[d.getMonth()]+' '+d.getFullYear();
+      var venCnt=ventas.filter(function(v){return mesKeyDe(v.at)===m;}).length;
+      return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+escSvg(lbl)+'</div><div class="user-row-email">'+venCnt+' venta'+(venCnt===1?'':'s')+'</div></div>'+
+        (cerrado?'<span class="role-badge admin" style="white-space:nowrap">🔒 Cerrado</span><button class="btn-quitar" onclick="abrirMes(\''+m+'\')" title="Reabrir">↻</button>':'<button class="btn-s" style="padding:6px 14px;font-size:11px;white-space:nowrap;flex-shrink:0" onclick="cerrarMes(\''+m+'\')">Cerrar</button>')+
       '</div>';
     }).join('');
 }
@@ -1869,7 +1871,18 @@ function renderAuditoria(body){
           '<div class="aud-info"><div class="aud-head"><strong>'+escSvg(who)+'</strong> <span class="aud-act">'+e.action+'</span></div><div class="aud-det">'+escSvg(det)+'</div><div class="aud-time">'+fecha+'</div></div>'+
         '</div>';
       }).join('');
-  }).catch(function(){body.innerHTML='<p style="color:var(--er);font-size:13px;text-align:center;padding:14px">Error cargando log</p>';});
+  }).catch(function(e){
+    console.error('auditoria',e);
+    var msg=String((e&&e.message)||e||'').toLowerCase();
+    var esPermiso=msg.indexOf('permission')>=0||msg.indexOf('missing or insufficient')>=0||msg.indexOf('insufficient permissions')>=0;
+    body.innerHTML='<div style="padding:14px;font-size:12px;color:var(--mu);text-align:center">'+
+      (esPermiso?
+        '<p style="color:var(--er);font-weight:700;margin-bottom:10px">🔒 Firestore bloquea la lectura del log</p>'+
+        '<p style="color:var(--mu);font-size:11.5px;line-height:1.5">Hay que permitir lectura/escritura de las colecciones <b>audit</b> y <b>settings</b> en las reglas de Firestore. Andá a Firebase Console → Firestore → Rules y agregá:</p>'+
+        '<pre style="text-align:left;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px;margin:10px 0;font-size:10.5px;overflow:auto;color:var(--tx)">match /audit/{id} {\n  allow read, write: if request.auth != null;\n}\nmatch /settings/{id} {\n  allow read, write: if request.auth != null;\n}</pre>'
+        :'<p style="color:var(--er)">Error: '+escSvg(msg||'desconocido')+'</p>')+
+      '</div>';
+  });
 }
 function cerrarMes(m){
   if(!confirm('¿Cerrar el mes '+m+'? Las ventas no se podrán editar ni borrar.'))return;
