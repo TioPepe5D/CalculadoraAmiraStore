@@ -314,12 +314,12 @@ select option{background:var(--sf2);color:var(--tx)}
 .aud-act{display:inline-block;font-size:10px;background:rgba(255,255,255,.06);color:var(--mu);padding:1px 6px;border-radius:6px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px}
 .aud-det{font-size:11px;color:var(--mu);margin-bottom:2px;word-wrap:break-word}
 .aud-time{font-size:10px;color:var(--mu);opacity:.7}
-.hm-wrap{display:flex;flex-direction:column;gap:2px;overflow-x:auto;padding:4px 0 8px}
-.hm-row{display:flex;gap:2px;align-items:center}
-.hm-hours{display:flex;gap:2px;align-items:center;margin-bottom:4px}
-.hm-lbl{width:18px;flex-shrink:0;font-size:9px;color:var(--mu);text-align:center;font-weight:700}
-.hm-cell{flex:1;min-width:14px;height:18px;border-radius:3px;font-size:8.5px;color:var(--tx);font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--hf)}
-.hm-cell.hm-h{background:transparent;color:var(--mu);font-weight:500;font-size:9px}
+.best-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.best-card{background:linear-gradient(180deg,rgba(212,175,55,.08),rgba(212,175,55,.02));border:1px solid rgba(212,175,55,.25);border-radius:12px;padding:14px 10px;text-align:center}
+.best-ico{font-size:22px;margin-bottom:6px}
+.best-lbl{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mu);font-weight:700;margin-bottom:5px}
+.best-val{font-family:var(--hf);font-size:16px;font-weight:800;color:var(--ac);line-height:1.2}
+.best-sub{font-size:11px;color:var(--mu);margin-top:4px}
 .stat-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin-bottom:6px}
 .stat-name{font-weight:600;font-size:14px}
 .stat-sub{font-size:11px;color:var(--mu);margin-top:3px}
@@ -1495,26 +1495,32 @@ function renderG(){
       '</div>';
     }).join('');
 
-  // Heatmap horario (día de semana × hora)
-  var heat={};var maxHeat=0;
-  h.forEach(function(v){var d=new Date(v.at||0);var key=((d.getDay()+6)%7)+'_'+d.getHours();heat[key]=(heat[key]||0)+1;if(heat[key]>maxHeat)maxHeat=heat[key];});
-  var hDias=['L','M','M','J','V','S','D'];
-  var heatGrid='';
-  for(var d=0;d<7;d++){
-    var row='<div class="hm-row"><div class="hm-lbl">'+hDias[d]+'</div>';
-    for(var hh=0;hh<24;hh++){
-      var k=d+'_'+hh,c=heat[k]||0;
-      var op=maxHeat>0?(c/maxHeat):0;
-      var bg=c>0?'rgba(212,175,55,'+(0.15+op*0.7).toFixed(2)+')':'rgba(255,255,255,.02)';
-      row+='<div class="hm-cell" style="background:'+bg+'" title="'+hDias[d]+' '+hh+':00 · '+c+' venta'+(c===1?'':'s')+'">'+(c>0?c:'')+'</div>';
-    }
-    row+='</div>';
-    heatGrid+=row;
+  // Mejor día y mejor hora (según filtro)
+  var diasNom=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  var porDia=[0,0,0,0,0,0,0];
+  var porHora={};
+  h.forEach(function(v){
+    var d=new Date(v.at||0);
+    porDia[(d.getDay()+6)%7]++;
+    var hh=d.getHours();porHora[hh]=(porHora[hh]||0)+1;
+  });
+  var mejorDiaIdx=-1,mejorDiaCnt=0;
+  porDia.forEach(function(c,i){if(c>mejorDiaCnt){mejorDiaCnt=c;mejorDiaIdx=i;}});
+  var mejorHora=-1,mejorHoraCnt=0;
+  Object.keys(porHora).forEach(function(k){if(porHora[k]>mejorHoraCnt){mejorHoraCnt=porHora[k];mejorHora=parseInt(k,10);}});
+  function rangoHora(hh){var fin=(hh+1)%24;return (hh<10?'0'+hh:hh)+':00 – '+(fin<10?'0'+fin:fin)+':00';}
+  var heatHtml;
+  if(h.length===0){
+    heatHtml='<div style="text-align:center;color:var(--mu);padding:16px;font-size:12px">Sin datos en este período</div>';
+  } else {
+    var pctDia=h.length>0?Math.round(mejorDiaCnt/h.length*100):0;
+    var pctHora=h.length>0?Math.round(mejorHoraCnt/h.length*100):0;
+    heatHtml=
+      '<div class="best-grid">'+
+        '<div class="best-card"><div class="best-ico">📅</div><div class="best-lbl">Mejor día</div><div class="best-val">'+(mejorDiaIdx>=0?diasNom[mejorDiaIdx]:'—')+'</div><div class="best-sub">'+mejorDiaCnt+' venta'+(mejorDiaCnt===1?'':'s')+' · '+pctDia+'%</div></div>'+
+        '<div class="best-card"><div class="best-ico">🕐</div><div class="best-lbl">Mejor hora</div><div class="best-val">'+(mejorHora>=0?rangoHora(mejorHora):'—')+'</div><div class="best-sub">'+mejorHoraCnt+' venta'+(mejorHoraCnt===1?'':'s')+' · '+pctHora+'%</div></div>'+
+      '</div>';
   }
-  var hmHours='<div class="hm-hours"><div class="hm-lbl"></div>';
-  for(var hh=0;hh<24;hh++){hmHours+='<div class="hm-cell hm-h">'+(hh%4===0?hh:'')+'</div>';}
-  hmHours+='</div>';
-  var heatHtml='<div class="hm-wrap">'+hmHours+heatGrid+'</div>';
 
   // Margen por categoría (ingreso estimado por proporción de costo)
   var marCats={Cadena:{cost:0,rev:0,emo:'🪙',n:'Cadena',col:CHART_COLORS[0]},Micro:{cost:0,rev:0,emo:'💎',n:'Micro',col:CHART_COLORS[1]},Italy:{cost:0,rev:0,emo:'🇮🇹',n:'Italy',col:CHART_COLORS[3]},GF18K:{cost:0,rev:0,emo:'☀️',n:'GF 18 K',col:CHART_COLORS[2]}};
@@ -1612,7 +1618,7 @@ function renderG(){
       marHtml+
     '</div>'+
     '<div class="chart-card">'+
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div class="chart-t" style="text-align:left;margin:0">Heatmap <span style="color:var(--mu);font-size:11px">horario</span></div><span style="font-size:14px">⏰</span></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div class="chart-t" style="text-align:left;margin:0">Mejor <span style="color:var(--mu);font-size:11px">momento</span></div><span style="font-size:14px">⏰</span></div>'+
       heatHtml+
     '</div>'+
     '<div class="chart-card">'+
