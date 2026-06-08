@@ -420,8 +420,12 @@ var mesesCerrados=[];
 var unsubCierres=null;
 function userRole(){
   if(!fbUser)return 'user';
+  // SOLO los emails hardcodeados en ADMINS pueden ser admin.
+  // Si profile.role dice 'admin' pero el email no está en la lista, se ignora (defensivo).
   if(window.__FB.isAdmin(fbUser.email))return 'admin';
-  return (profile&&profile.role)||'user';
+  // Supervisor SOLO si profile.role lo dice (asignado por un admin verdadero).
+  if(profile&&profile.role==='supervisor')return 'supervisor';
+  return 'user';
 }
 function canViewAll(){var r=userRole();return r==='admin'||r==='supervisor';}
 function canEditAll(){var r=userRole();return r==='admin'||r==='supervisor';}
@@ -1828,6 +1832,11 @@ function loadAdmin(t){
           '<div class="campo"><label>Rol</label><select id="nuR"><option value="user" selected>user</option><option value="supervisor">supervisor</option><option value="admin">admin</option></select></div>'+
           '<div id="nuErr" style="color:var(--er);font-size:12px;margin-bottom:8px;display:none"></div>'+
           '<button class="btn-p" onclick="adCreate()">Crear usuario</button>'+
+        '</div>'+
+        '<div style="border-top:1px solid var(--bd);padding-top:14px;margin-top:14px">'+
+          '<div style="font-size:10px;letter-spacing:.2em;color:var(--er);text-transform:uppercase;margin-bottom:8px">⚠ Resetear permisos</div>'+
+          '<button class="btn-s" id="btnRstRol" onclick="adResetRoles()" style="border-color:rgba(200,80,80,.4);color:#c87070">🔒 Resetear roles a vendedor</button>'+
+          '<p class="nota" style="margin-top:6px">Pone a TODOS los usuarios en rol "user" (solo ven sus propias ventas). Diego y Martin mantienen acceso admin por email hardcodeado.</p>'+
         '</div>';
     });
   } else if(t==='s'){
@@ -1937,6 +1946,25 @@ function adChangeRole(uid,rol,name){
   window.__FB.saveUser(uid,{role:rol}).then(function(){
     bitacora('role',{detalle:name+' → '+rol});
     toastOk('Rol actualizado');loadAdmin('u');
+  });
+}
+function adResetRoles(){
+  if(!canManageUsers()){toast('Solo admin');return;}
+  if(!confirm('Esto bajará a TODOS los usuarios al rol "user" (solo verán sus propias ventas). Los admins hardcodeados (Diego y Martin) mantienen su acceso por email.\n\n¿Confirmás?'))return;
+  window.__FB.getUsers().then(function(users){
+    var btn=document.getElementById('btnRstRol');if(btn){btn.disabled=true;btn.textContent='Reseteando…';}
+    var ok=0,err=0;
+    var tasks=users.map(function(u){
+      if(window.__FB.isAdmin(u.email))return Promise.resolve();
+      if(u.role==='user')return Promise.resolve();
+      return window.__FB.saveUser(u.uid,{role:'user'}).then(function(){ok++;},function(){err++;});
+    });
+    Promise.all(tasks).then(function(){
+      bitacora('role',{detalle:'Reset masivo: '+ok+' usuarios a "user"'});
+      if(btn){btn.disabled=false;btn.textContent='🔒 Resetear roles a vendedor';}
+      toastOk('✓ '+ok+' usuario(s) reseteados'+(err?' · '+err+' con error':''));
+      loadAdmin('u');
+    });
   });
 }
 function adDel(uid,name){if(!confirm('¿Eliminar perfil de '+name+'?'))return;window.__FB.deleteUser(uid).then(function(){toast('Perfil eliminado');loadAdmin(aTab);});}
