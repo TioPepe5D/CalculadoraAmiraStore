@@ -1844,7 +1844,7 @@ function renderCierres(body){
       var lbl=meses[d.getMonth()]+' '+d.getFullYear();
       var venCnt=ventas.filter(function(v){return mesKeyDe(v.at)===m;}).length;
       return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+escSvg(lbl)+'</div><div class="user-row-email">'+venCnt+' venta'+(venCnt===1?'':'s')+'</div></div>'+
-        (cerrado?'<span class="role-badge admin" style="white-space:nowrap">🔒 Cerrado</span><button class="btn-quitar" onclick="abrirMes(\''+m+'\')" title="Reabrir">↻</button>':'<button class="btn-s" style="padding:6px 14px;font-size:11px;white-space:nowrap;flex-shrink:0" onclick="cerrarMes(\''+m+'\')">Cerrar</button>')+
+        (cerrado?'<span class="role-badge admin" style="white-space:nowrap">🔒 Cerrado</span><button class="btn-quitar" onclick="abrirMes(\''+m+'\')" title="Reabrir">↻</button>':'<button onclick="cerrarMes(\''+m+'\')" style="background:transparent;border:1px solid var(--bd2);border-radius:10px;color:var(--mu);font-family:var(--bf);font-size:11px;font-weight:600;padding:7px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0">Cerrar</button>')+
       '</div>';
     }).join('');
 }
