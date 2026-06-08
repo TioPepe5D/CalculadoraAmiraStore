@@ -287,6 +287,9 @@ select option{background:var(--sf2);color:var(--tx)}
 .edit-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-family:var(--bf);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px}
 .edit-actions .save{background:var(--ac);color:var(--bg)}
 .edit-actions .cancel{background:transparent;border:1px solid var(--bd2);color:var(--mu)}
+.lockchip{display:inline-flex;align-items:center;background:rgba(255,255,255,.06);color:var(--mu);font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px;border:1px solid var(--bd2)}
+.hventa.cerrada{opacity:.85}
+.hventa.cerrada .hventa-total{color:var(--mu)}
 .admin-head{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
 .admin-head h3{font-size:15px;font-weight:700}
 .admin-tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--bd)}
@@ -299,7 +302,24 @@ select option{background:var(--sf2);color:var(--tx)}
 .user-row-email{font-size:10px;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .role-badge{font-size:10px;padding:2px 8px;border:1px solid;border-radius:999px}
 .role-badge.admin{color:var(--ac);border-color:rgba(91,159,214,.4)}
+.role-badge.supervisor{color:#e8b04b;border-color:rgba(232,176,75,.4)}
 .role-badge.user{color:var(--mu);border-color:var(--bd)}
+.rol-select{background:var(--sf2);border:1px solid var(--bd2);color:var(--tx);border-radius:8px;padding:4px 6px;font-family:var(--bf);font-size:11px;outline:none;cursor:pointer}
+.aud-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.aud-row:last-child{border-bottom:none}
+.aud-ico{width:32px;height:32px;flex-shrink:0;background:var(--sf2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+.aud-info{flex:1;min-width:0}
+.aud-head{font-size:13px;color:var(--tx);margin-bottom:2px}
+.aud-head strong{color:var(--ac)}
+.aud-act{display:inline-block;font-size:10px;background:rgba(255,255,255,.06);color:var(--mu);padding:1px 6px;border-radius:6px;margin-left:6px;text-transform:uppercase;letter-spacing:.5px}
+.aud-det{font-size:11px;color:var(--mu);margin-bottom:2px;word-wrap:break-word}
+.aud-time{font-size:10px;color:var(--mu);opacity:.7}
+.hm-wrap{display:flex;flex-direction:column;gap:2px;overflow-x:auto;padding:4px 0 8px}
+.hm-row{display:flex;gap:2px;align-items:center}
+.hm-hours{display:flex;gap:2px;align-items:center;margin-bottom:4px}
+.hm-lbl{width:18px;flex-shrink:0;font-size:9px;color:var(--mu);text-align:center;font-weight:700}
+.hm-cell{flex:1;min-width:14px;height:18px;border-radius:3px;font-size:8.5px;color:var(--tx);font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--hf)}
+.hm-cell.hm-h{background:transparent;color:var(--mu);font-weight:500;font-size:9px}
 .stat-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin-bottom:6px}
 .stat-name{font-weight:600;font-size:14px}
 .stat-sub{font-size:11px;color:var(--mu);margin-top:3px}
@@ -340,7 +360,7 @@ select option{background:var(--sf2);color:var(--tx)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyADmCGMP2owqLlhxq_B5yU8qkMNOE0pob0",
@@ -370,6 +390,11 @@ window.__FB = {
   saveUser: async (uid,d) => setDoc(doc(db,"users",uid),d,{merge:true}),
   deleteUser: async (uid) => deleteDoc(doc(db,"users",uid)),
   getUser: async (uid) => { const s=await getDoc(doc(db,"users",uid)); return s.exists()?s.data():null; },
+  getCierres: async () => { const s=await getDoc(doc(db,"settings","cierres")); return s.exists()?(s.data().lockedMonths||[]):[]; },
+  saveCierres: async (arr) => setDoc(doc(db,"settings","cierres"),{lockedMonths:arr,updatedAt:Date.now()}),
+  listenCierres: (cb) => onSnapshot(doc(db,"settings","cierres"), s => cb(s.exists()?(s.data().lockedMonths||[]):[])),
+  logAudit: async (entry) => { const id='a_'+Date.now()+'_'+Math.random().toString(36).slice(2,8); const c=JSON.parse(JSON.stringify({...entry,id,at:Date.now()},(k,x)=>x===undefined?null:x)); await setDoc(doc(db,"audit",id),c); },
+  getAuditLog: async (n) => { const s=await getDocs(query(collection(db,"audit"),orderBy("at","desc"),limit(n||100))); return s.docs.map(d=>d.data()); },
 };
 </script>
 
@@ -390,6 +415,29 @@ var repUser='';
 var repOff=0;
 var gPer='mes',gUser='',gOff=0,gSel=null;
 var DIST={Amanda:{v:0.70,d:0.30},Cris:{v:0.50,d:0.50},Martin:{v:0.75,d:0.25},Benjamin:{v:0.75,d:0.25},Jordan:{v:0.80,d:0.20},Diego:{v:0.50,d:0.50}};
+var mesesCerrados=[];
+var unsubCierres=null;
+function userRole(){
+  if(!fbUser)return 'user';
+  if(window.__FB.isAdmin(fbUser.email))return 'admin';
+  return (profile&&profile.role)||'user';
+}
+function canViewAll(){var r=userRole();return r==='admin'||r==='supervisor';}
+function canEditAll(){var r=userRole();return r==='admin'||r==='supervisor';}
+function canManageUsers(){return userRole()==='admin';}
+function canMigrar(){return userRole()==='admin';}
+function canCerrarMes(){return userRole()==='admin';}
+function canVerAudit(){return userRole()==='admin'||userRole()==='supervisor';}
+function mesKeyDe(at){var d=new Date(at||0);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function estaCerrado(at){return mesesCerrados.indexOf(mesKeyDe(at))>=0;}
+function ventaEditable(v){
+  if(estaCerrado(v.at))return false;
+  if(canEditAll())return true;
+  return v.userId===fbUser.uid;
+}
+function bitacora(action,detalles){
+  try{window.__FB.logAudit({action:action,user:{uid:fbUser.uid,name:nicerName((profile&&profile.name)||fbUser.email),email:fbUser.email,role:userRole()},...detalles});}catch(e){}
+}
 function matchDist(name){
   var n=(name||'').trim().toLowerCase();
   if(!n)return{key:'Vendedor',pct:{v:0.60,d:0.40}};
@@ -483,16 +531,18 @@ function doLogin(){
 function doLogout(){if(unsub){unsub();unsub=null;}window.__FB.signOut();}
 
 function renderApp(){
-  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var isAdm=canViewAll();
+  var rol=userRole();
+  var rolBadge=rol==='admin'?' · Admin':rol==='supervisor'?' · Supervisor':'';
   var nom=profile?profile.name:fbUser.email.split('@')[0];
   document.getElementById('R').innerHTML=
     '<div class="app-head">'+
       '<div class="app-head-l">'+
         '<div class="app-head-t">Ventas <span>Personales</span></div>'+
-        '<div class="app-head-s">Joyería Aravena · <b>'+escSvg(nicerName(nom))+(isAdm?' · Admin':'')+'</b></div>'+
+        '<div class="app-head-s">Joyería Aravena · <b>'+escSvg(nicerName(nom))+rolBadge+'</b></div>'+
       '</div>'+
       '<div class="app-head-r">'+
-        (isAdm?'<button class="btn-ico" title="Admin" onclick="openAdmin()">👥</button>':'')+
+        (canViewAll()?'<button class="btn-ico" title="Panel" onclick="openAdmin()">👥</button>':'')+
         '<button class="btn-tema" id="btnT" onclick="toggleCajon()">🎨 <span id="nTema">Joyería</span> ▾</button>'+
         '<button class="btn-logout" onclick="doLogout()">Salir</button>'+
       '</div>'+
@@ -580,11 +630,12 @@ function hCat(cat,emoji,nom,p1,p2){
 
 function startListener(){
   if(unsub){unsub();unsub=null;}
-  var isAdm=window.__FB.isAdmin(fbUser.email);
-  var fn=isAdm
+  var fn=canViewAll()
     ?function(cb){return window.__FB.listenVentas(cb);}
     :function(cb){return window.__FB.listenMyVentas(fbUser.uid,cb);};
   unsub=fn(function(v){ventas=v;if(tab==='historial')renderH();if(tab==='reportes')renderRep();if(tab==='graficos')renderG();});
+  if(unsubCierres){unsubCierres();unsubCierres=null;}
+  unsubCierres=window.__FB.listenCierres(function(arr){mesesCerrados=arr||[];if(tab==='historial')renderH();});
 }
 
 function setP(cat,val,btn){
@@ -759,11 +810,18 @@ function guardarVenta(){
   }).catch(function(e){toast('Error: '+e.message);});
 }
 
-function eliminarVenta(id){if(!confirm('¿Eliminar esta venta?'))return;window.__FB.deleteVenta(id).then(function(){toast('Eliminada');});}
+function eliminarVenta(id){
+  var v=ventas.find(function(x){return x.id===id;});if(!v)return;
+  if(!ventaEditable(v)){toast(estaCerrado(v.at)?'Período cerrado — no se puede eliminar':'Sin permisos');return;}
+  if(!confirm('¿Eliminar esta venta?'))return;
+  bitacora('delete',{ventaId:id,before:{cliente:v.cliente,totalVenta:v.totalVenta,utilidad:v.utilidad,at:v.at,userName:v.userName}});
+  window.__FB.deleteVenta(id).then(function(){toast('Eliminada');});
+}
 
 var EDIT_VENTA=null,EDIT_INS=[];
 function editarVenta(id){
   var v=ventas.find(function(x){return x.id===id;});if(!v)return;
+  if(!ventaEditable(v)){toast(estaCerrado(v.at)?'Período cerrado — no se puede editar':'Sin permisos para editar');return;}
   EDIT_VENTA=v;EDIT_INS=(v.insumos||[]).map(function(i){return {desc:i.desc,costo:i.costo};});
   var grMap={Cadena:0,Micro:0,Italy:0,GF18K:0},pgrMap={Cadena:PRECIO_NORMAL.Cadena,Micro:PRECIO_NORMAL.Micro,Italy:PRECIO_NORMAL.Italy,GF18K:PRECIO_NORMAL.GF18K};
   (v.lineas||[]).forEach(function(l){if(grMap[l.cat]!==undefined){grMap[l.cat]=l.gr;pgrMap[l.cat]=l.pgr;}});
@@ -856,15 +914,17 @@ function guardarEdicion(){
   if(!cli){toast('Ingresá nombre de cliente');return;}
   var d=edCalc();if(!d||d.venta<=0){toast('Ingresá total de venta');return;}
   var canal=document.getElementById('eCanal').value;
+  var prev={cliente:EDIT_VENTA.cliente,totalVenta:EDIT_VENTA.totalVenta,utilidad:EDIT_VENTA.utilidad,ventaPor:EDIT_VENTA.ventaPor};
   var patch={
     cliente:cli,ventaPor:canal,
     lineas:d.lineas,insumos:EDIT_INS.slice(),
     totalVenta:d.venta,utilidad:d.util,
     diego:d.util*d.pD,vendedor:d.util*d.pV,
     pctDiego:d.pD,pctVendedor:d.pV,
-    editadoAt:Date.now()
+    editadoAt:Date.now(),editadoPor:nicerName((profile&&profile.name)||fbUser.email)
   };
   window.__FB.updateVenta(EDIT_VENTA.id,patch).then(function(){
+    bitacora('edit',{ventaId:EDIT_VENTA.id,before:prev,after:{cliente:cli,totalVenta:d.venta,utilidad:d.util,ventaPor:canal}});
     toastOk('✓ Venta actualizada');cerrarEditor();
   }).catch(function(e){toast('Error: '+e.message);});
 }
@@ -899,7 +959,7 @@ function hFiltrar(){
 function renderH(){
   var el=document.getElementById('sHistorial');if(!el)return;
   var periodos=[{k:'hoy',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'},{k:'todo',ico:'∞',lbl:'Todo'}];
-  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var isAdm=canViewAll();
   var memberFilter='';
   if(isAdm){
     var members={};ventas.forEach(function(v){if(v.userId&&v.userName)members[v.userId]=nicerName(v.userName);});
@@ -994,17 +1054,20 @@ function renderHLista(){
       var pillVendedor='<div class="hpill"><div class="hpill-circ" style="background:'+avatarColor(nom)+'">'+initial(nom)+'</div><div class="hpill-info"><span class="l">Vendedor</span><span class="v">'+escSvg(nom)+'</span></div></div>';
       var pillCanal=vPorLbl!=='—'?'<div class="hpill"><div class="hpill-circ" style="background:#5b9aa0">📦</div><div class="hpill-info"><span class="l">Canal</span><span class="v">'+escSvg(canalShown)+'</span></div></div>':'';
       var kileroChip=ventaTieneKilero(v)?'<span class="kbadge">🏷 KILERO</span>':'';
+      var cerrado=estaCerrado(v.at);
+      var lockChip=cerrado?'<span class="lockchip" title="Período cerrado">🔒</span>':'';
+      var editable=ventaEditable(v);
       var fechaLbl=g.lbl==='HOY'?'Hoy':g.lbl==='AYER'?'Ayer':(v.fecha||'');
-      return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+'">'+
-        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
+      return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+(cerrado?' cerrada':'')+'">'+
+        '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+lockChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
         '<div class="hitems">'+(lineas||insumos?(lineas+insumos):'<div class="hitem"><div class="hitem-l"><span class="hitem-nom">—</span></div></div>')+'</div>'+
         '<div class="hpill-row">'+pillVendedor+pillCanal+'</div>'+
         '<div class="hventa-bottom">'+
           '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div>'+(totGr>0?'<div style="font-size:11px;color:var(--mu);margin-top:4px">'+(Math.round(totGr*10)/10)+'g en oro</div>':'')+'</div>'+
           '<div class="hventa-acc">'+
             '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
-            '<button class="hbtn" onclick="editarVenta(\''+v.id+'\')" title="Editar">✏️</button>'+
-            '<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>'+
+            (editable?'<button class="hbtn" onclick="editarVenta(\''+v.id+'\')" title="Editar">✏️</button>':'')+
+            (editable?'<button class="hbtn danger" onclick="eliminarVenta(\''+v.id+'\')" title="Eliminar">🗑</button>':'')+
           '</div>'+
         '</div>'+
       '</div>';
@@ -1014,7 +1077,7 @@ function renderHLista(){
 }
 
 function descargarExcel(){
-  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var isAdm=canViewAll();
   var lista=hFiltrar();
   if(hUser)lista=lista.filter(function(v){return v.userId===hUser;});
   if(!lista.length){toast('Sin datos para exportar');return;}
@@ -1066,7 +1129,7 @@ function renderRep(){
     });
     return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:tC,cnt:h.length};
   }
-  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var isAdm=canViewAll();
   var periodos=[{k:'dia',ico:'☀️',lbl:'Hoy'},{k:'sem',ico:'📅',lbl:'Semana'},{k:'mes',ico:'🗓',lbl:'Mes'},{k:'ano',ico:'📆',lbl:'Año'},{k:'todo',ico:'∞',lbl:'Todo'}];
   var rng=gRange(repPer,repOff);
   var hPer_=ventas.filter(function(v){var t=v.at||0;return t>=rng.from&&t<=rng.to;});
@@ -1288,7 +1351,7 @@ var tbSort={c:'gramos',dir:-1};
 
 function renderG(){
   var el=document.getElementById('sGraficos');if(!el)return;
-  var isAdm=window.__FB.isAdmin(fbUser.email);
+  var isAdm=canViewAll();
   var periodos=[{k:'dia',lbl:'Diario'},{k:'sem',lbl:'Semanal'},{k:'mes',lbl:'Mensual'},{k:'ano',lbl:'Anual'},{k:'todo',lbl:'Todo'}];
   var rng=gRange(gPer,gOff);
   var base=ventas.filter(function(v){var t=v.at||0;return t>=rng.from&&t<=rng.to;});
@@ -1432,6 +1495,60 @@ function renderG(){
       '</div>';
     }).join('');
 
+  // Heatmap horario (día de semana × hora)
+  var heat={};var maxHeat=0;
+  h.forEach(function(v){var d=new Date(v.at||0);var key=((d.getDay()+6)%7)+'_'+d.getHours();heat[key]=(heat[key]||0)+1;if(heat[key]>maxHeat)maxHeat=heat[key];});
+  var hDias=['L','M','M','J','V','S','D'];
+  var heatGrid='';
+  for(var d=0;d<7;d++){
+    var row='<div class="hm-row"><div class="hm-lbl">'+hDias[d]+'</div>';
+    for(var hh=0;hh<24;hh++){
+      var k=d+'_'+hh,c=heat[k]||0;
+      var op=maxHeat>0?(c/maxHeat):0;
+      var bg=c>0?'rgba(212,175,55,'+(0.15+op*0.7).toFixed(2)+')':'rgba(255,255,255,.02)';
+      row+='<div class="hm-cell" style="background:'+bg+'" title="'+hDias[d]+' '+hh+':00 · '+c+' venta'+(c===1?'':'s')+'">'+(c>0?c:'')+'</div>';
+    }
+    row+='</div>';
+    heatGrid+=row;
+  }
+  var hmHours='<div class="hm-hours"><div class="hm-lbl"></div>';
+  for(var hh=0;hh<24;hh++){hmHours+='<div class="hm-cell hm-h">'+(hh%4===0?hh:'')+'</div>';}
+  hmHours+='</div>';
+  var heatHtml='<div class="hm-wrap">'+hmHours+heatGrid+'</div>';
+
+  // Margen por categoría (ingreso estimado por proporción de costo)
+  var marCats={Cadena:{cost:0,rev:0,emo:'🪙',n:'Cadena',col:CHART_COLORS[0]},Micro:{cost:0,rev:0,emo:'💎',n:'Micro',col:CHART_COLORS[1]},Italy:{cost:0,rev:0,emo:'🇮🇹',n:'Italy',col:CHART_COLORS[3]},GF18K:{cost:0,rev:0,emo:'☀️',n:'GF 18 K',col:CHART_COLORS[2]}};
+  var marIns={cost:0,rev:0,emo:'🔩',n:'Insumos',col:'#ec4899'};
+  h.forEach(function(v){
+    var venta=v.totalVenta||0;
+    var costoLineas=(v.lineas||[]).map(function(l){return {cat:l.cat,c:(l.gr||0)*(l.pgr||0)};});
+    var costoInsTotal=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
+    var costoTotalSale=costoLineas.reduce(function(s,l){return s+l.c;},0)+costoInsTotal+1000;
+    if(costoTotalSale<=0)return;
+    costoLineas.forEach(function(l){
+      if(!marCats[l.cat])return;
+      marCats[l.cat].cost+=l.c;
+      marCats[l.cat].rev+=venta*(l.c/costoTotalSale);
+    });
+    if(costoInsTotal>0){
+      marIns.cost+=costoInsTotal;
+      marIns.rev+=venta*(costoInsTotal/costoTotalSale);
+    }
+  });
+  var marList=Object.keys(marCats).map(function(k){return marCats[k];}).filter(function(c){return c.cost>0;});
+  if(marIns.cost>0)marList.push(marIns);
+  marList.sort(function(a,b){return b.rev-a.rev;});
+  var marHtml=marList.length===0?'<div style="color:var(--mu);font-size:12px;padding:8px 0">Sin datos</div>':
+    marList.map(function(c){
+      var margenAbs=c.rev-c.cost;
+      var margenPct=c.rev>0?(margenAbs/c.rev*100):0;
+      return '<div class="prod-row">'+
+        '<div class="prod-h"><span class="prod-n">'+c.emo+' '+escSvg(c.n)+'</span><span><span class="prod-pct" style="color:'+(margenPct>=0?'var(--ok)':'var(--er)')+';font-weight:700">'+margenPct.toFixed(0)+'%</span></span></div>'+
+        '<div class="com-bar" style="margin-top:6px"><i style="width:'+Math.max(2,margenPct)+'%;background:'+c.col+'"></i></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin:4px 0 8px"><span>Ingreso: <b style="color:var(--tx)">'+fmt(c.rev)+'</b></span><span>Costo: <b style="color:var(--tx)">'+fmt(c.cost)+'</b></span><span>Margen: <b style="color:'+(margenAbs>=0?'var(--ok)':'var(--er)')+'">'+fmt(margenAbs)+'</b></span></div>'+
+      '</div>';
+    }).join('');
+
   var tablaHtml=tabRows.map(function(r,i){
     var col=CHART_COLORS[i%CHART_COLORS.length];
     var pct=tabTotalIng>0?(r.ingresos/tabTotalIng*100):0;
@@ -1489,6 +1606,14 @@ function renderG(){
     '<div class="chart-card">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Producto <span style="color:var(--mu);font-size:11px">más vendido</span></div><div style="font-size:11px;color:var(--mu)"><strong style="color:var(--ac)">'+fmtGr(prodTotalG)+'</strong> total</div></div>'+
       prodHtml+
+    '</div>'+
+    '<div class="chart-card">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><div class="chart-t" style="text-align:left;margin:0">Margen <span style="color:var(--mu);font-size:11px">por categoría</span></div><span style="font-size:14px">📈</span></div>'+
+      marHtml+
+    '</div>'+
+    '<div class="chart-card">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div class="chart-t" style="text-align:left;margin:0">Heatmap <span style="color:var(--mu);font-size:11px">horario</span></div><span style="font-size:14px">⏰</span></div>'+
+      heatHtml+
     '</div>'+
     '<div class="chart-card">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div class="chart-t" style="text-align:left;margin:0">Tabla <span style="color:var(--mu);font-size:11px">comparativa</span></div><span>📊</span></div>'+
@@ -1549,6 +1674,7 @@ function autoKileroJunio(){
   });
   Promise.all(tasks).then(function(){
     if(btn){btn.disabled=false;btn.textContent='🏷 Auto-aplicar Kilero (desde 1-jun)';}
+    bitacora('auto_kilero',{detalle:ok+' ventas actualizadas desde 1-jun'});
     toastOk('✓ '+ok+' venta(s) actualizadas'+(err?' · '+err+' con error':''));
   });
 }
@@ -1577,6 +1703,7 @@ function recalcularComisiones(){
   });
   Promise.all(tasks).then(function(){
     if(btn){btn.disabled=false;btn.textContent='⚙️ Recalcular utilidad y comisiones';}
+    bitacora('recalc',{detalle:ok+' ventas recalculadas'});
     toastOk('✓ '+ok+' venta(s) actualizadas'+(err?' · '+err+' con error':''));
   });
 }
@@ -1617,33 +1744,48 @@ function migrarCostosMayo(){
   });
   Promise.all(tasks).then(function(){
     if(btn){btn.disabled=false;btn.textContent='🔧 Migrar costos (desde 1-may)';}
+    bitacora('price_migration',{detalle:ok+' ventas migradas (desde 1-may)'});
     toastOk('✓ '+ok+' venta(s) migradas'+(err?' · '+err+' con error':''));
   });
 }
 
 function openAdmin(){
   var ov=document.createElement('div');ov.className='admin-overlay';ov.id='aOv';
+  var tabs='';
+  if(canManageUsers())tabs+='<button class="admin-tab" id="atU" onclick="swAdmin(\'u\')">👥 Usuarios</button>';
+  tabs+='<button class="admin-tab" id="atS" onclick="swAdmin(\'s\')">📊 Stats</button>';
+  if(canCerrarMes())tabs+='<button class="admin-tab" id="atC" onclick="swAdmin(\'c\')">🔒 Cierres</button>';
+  if(canVerAudit())tabs+='<button class="admin-tab" id="atA" onclick="swAdmin(\'a\')">📜 Auditoría</button>';
   ov.innerHTML='<div class="admin-modal">'+
     '<div class="admin-head"><h3>👑 Panel de Admin</h3><button class="btn-logout" onclick="closeAdmin()">✕</button></div>'+
-    '<div class="admin-tabs"><button class="admin-tab activo" id="atU" onclick="swAdmin(\'u\')">👥 Usuarios</button><button class="admin-tab" id="atS" onclick="swAdmin(\'s\')">📊 Stats</button></div>'+
+    '<div class="admin-tabs" style="flex-wrap:wrap">'+tabs+'</div>'+
     '<div class="admin-body" id="aBody"><p style="color:var(--mu);font-size:13px">Cargando…</p></div>'+
   '</div>';
-  document.body.appendChild(ov);loadAdmin('u');
+  document.body.appendChild(ov);
+  var initial=canManageUsers()?'u':'s';swAdmin(initial);
 }
 function closeAdmin(){var o=document.getElementById('aOv');if(o)o.remove();}
-function swAdmin(t){aTab=t;document.getElementById('atU').classList.toggle('activo',t==='u');document.getElementById('atS').classList.toggle('activo',t==='s');loadAdmin(t);}
+function swAdmin(t){
+  aTab=t;
+  ['u','s','c','a'].forEach(function(k){var b=document.getElementById('at'+k.toUpperCase());if(b)b.classList.toggle('activo',t===k);});
+  loadAdmin(t);
+}
 function loadAdmin(t){
   var body=document.getElementById('aBody');if(!body)return;
   body.innerHTML='<p style="color:var(--mu);font-size:13px">Cargando…</p>';
-  window.__FB.getUsers().then(function(users){
-    if(t==='u'){
+  if(t==='u'&&canManageUsers()){
+    window.__FB.getUsers().then(function(users){
+      var rOpts=['admin','supervisor','user'];
       body.innerHTML=
         '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin-bottom:10px">Usuarios ('+users.length+')</div>'+
         users.map(function(u){
           var isMe=u.uid===fbUser.uid;
-          return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+u.name+'</div><div class="user-row-email">'+u.email+'</div></div>'+
-            '<span class="role-badge '+(u.role||'user')+'">'+(u.role||'user')+'</span>'+
-            (!isMe?'<button class="btn-quitar" onclick="adDel(\''+u.uid+'\',\''+u.name+'\')">✕</button>':'')+
+          var actualRol=u.role||'user';
+          var rolSelect=isMe?'<span class="role-badge '+actualRol+'">'+actualRol+'</span>':
+            '<select class="rol-select" onchange="adChangeRole(\''+u.uid+'\',this.value,\''+escSvg(u.name)+'\')">'+rOpts.map(function(r){return '<option value="'+r+'"'+(actualRol===r?' selected':'')+'>'+r+'</option>';}).join('')+'</select>';
+          return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+escSvg(u.name)+'</div><div class="user-row-email">'+escSvg(u.email)+'</div></div>'+
+            rolSelect+
+            (!isMe?'<button class="btn-quitar" onclick="adDel(\''+u.uid+'\',\''+escSvg(u.name)+'\')">✕</button>':'')+
           '</div>';
         }).join('')+
         '<div style="border-top:1px solid var(--bd);padding-top:14px;margin-top:14px">'+
@@ -1651,25 +1793,105 @@ function loadAdmin(t){
           '<div class="campo"><label>Nombre</label><input type="text" id="nuN" placeholder="Nombre"></div>'+
           '<div class="campo"><label>Email</label><input type="email" id="nuE" placeholder="usuario@email.com"></div>'+
           '<div class="campo"><label>Contraseña temporal</label><input type="password" id="nuP" placeholder="Mínimo 6 caracteres"></div>'+
+          '<div class="campo"><label>Rol</label><select id="nuR"><option value="user" selected>user</option><option value="supervisor">supervisor</option><option value="admin">admin</option></select></div>'+
           '<div id="nuErr" style="color:var(--er);font-size:12px;margin-bottom:8px;display:none"></div>'+
           '<button class="btn-p" onclick="adCreate()">Crear usuario</button>'+
         '</div>';
-    } else {
-      var byU={};ventas.forEach(function(v){var uid=v.userId||'?';byU[uid]=byU[uid]||{name:nicerName(v.userName),count:0,total:0};byU[uid].count++;byU[uid].total+=v.totalVenta||0;});
-      body.innerHTML=
-        '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin-bottom:12px">Actividad por usuario</div>'+
-        Object.values(byU).map(function(u){return '<div class="stat-row"><div><div class="stat-name">'+u.name+'</div><div class="stat-sub">'+u.count+' venta'+(u.count===1?'':'s')+'</div></div><div class="stat-val"><div class="v">'+fmt(u.total)+'</div><div class="l">VENTAS</div></div></div>';}).join('')+
-        '<div class="total-global"><span>Total global</span><span>'+fmt(ventas.reduce(function(s,v){return s+(v.totalVenta||0);},0))+'</span></div>'+
-        '<div style="border-top:1px solid var(--bd);padding-top:14px;margin-top:14px">'+
-          '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔧 Mantenimiento</div>'+
-          '<button class="btn-s" id="btnKilJun" onclick="autoKileroJunio()">🏷 Auto-aplicar Kilero (desde 1-jun)</button>'+
-          '<p class="nota" style="margin-top:6px">Revisa las ventas desde 1-jun: si cumplen ≥500 g o ≥$250.000 y se cargaron a precio normal, las actualiza a precio kilero y recalcula utilidad y comisiones.</p>'+
-          '<button class="btn-s" id="btnMigrar" onclick="migrarCostosMayo()" style="margin-top:10px">🔧 Migrar costos (desde 1-may)</button>'+
-          '<p class="nota" style="margin-top:6px">Aplica los nuevos precios kilero a Cadena/Micro y recalcula GF 18 K (Oro) en todas las ventas desde 1-may.</p>'+
-          '<button class="btn-s" id="btnRecCom" onclick="recalcularComisiones()" style="margin-top:10px">⚙️ Recalcular utilidad y comisiones</button>'+
-          '<p class="nota" style="margin-top:6px">Recalcula utilidad como Venta − (Oro + Insumos + $1.000 empaque) y reparte vendedor/empresa según %. Corrige inconsistencias en datos viejos.</p>'+
-        '</div>';
+    });
+  } else if(t==='s'){
+    var byU={};ventas.forEach(function(v){var uid=v.userId||'?';byU[uid]=byU[uid]||{name:nicerName(v.userName),count:0,total:0};byU[uid].count++;byU[uid].total+=v.totalVenta||0;});
+    var mant='';
+    if(canMigrar()){
+      mant='<div style="border-top:1px solid var(--bd);padding-top:14px;margin-top:14px">'+
+        '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔧 Mantenimiento</div>'+
+        '<button class="btn-s" id="btnKilJun" onclick="autoKileroJunio()">🏷 Auto-aplicar Kilero (desde 1-jun)</button>'+
+        '<p class="nota" style="margin-top:6px">Revisa las ventas desde 1-jun: si cumplen ≥500 g o ≥$250.000 y se cargaron a precio normal, las actualiza a precio kilero.</p>'+
+        '<button class="btn-s" id="btnMigrar" onclick="migrarCostosMayo()" style="margin-top:10px">🔧 Migrar costos (desde 1-may)</button>'+
+        '<p class="nota" style="margin-top:6px">Aplica los nuevos precios kilero a Cadena/Micro y recalcula GF 18 K.</p>'+
+        '<button class="btn-s" id="btnRecCom" onclick="recalcularComisiones()" style="margin-top:10px">⚙️ Recalcular utilidad y comisiones</button>'+
+        '<p class="nota" style="margin-top:6px">Recalcula utilidad y reparte vendedor/empresa según %.</p>'+
+      '</div>';
     }
+    body.innerHTML=
+      '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin-bottom:12px">Actividad por usuario</div>'+
+      Object.values(byU).map(function(u){return '<div class="stat-row"><div><div class="stat-name">'+escSvg(u.name)+'</div><div class="stat-sub">'+u.count+' venta'+(u.count===1?'':'s')+'</div></div><div class="stat-val"><div class="v">'+fmt(u.total)+'</div><div class="l">VENTAS</div></div></div>';}).join('')+
+      '<div class="total-global"><span>Total global</span><span>'+fmt(ventas.reduce(function(s,v){return s+(v.totalVenta||0);},0))+'</span></div>'+
+      mant;
+  } else if(t==='c'&&canCerrarMes()){
+    renderCierres(body);
+  } else if(t==='a'&&canVerAudit()){
+    renderAuditoria(body);
+  } else {
+    body.innerHTML='<p style="color:var(--mu);font-size:13px;text-align:center;padding:14px">Sin permisos</p>';
+  }
+}
+function renderCierres(body){
+  var meses={};ventas.forEach(function(v){if(v.at)meses[mesKeyDe(v.at)]=1;});
+  var ahora=mesKeyDe(Date.now());meses[ahora]=1;
+  var lista=Object.keys(meses).sort().reverse();
+  body.innerHTML=
+    '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔒 Cierre de períodos</div>'+
+    '<p class="nota" style="margin-bottom:14px">Cerrar un mes bloquea la edición y eliminación de sus ventas. Solo admin puede reabrirlo.</p>'+
+    lista.map(function(m){
+      var cerrado=mesesCerrados.indexOf(m)>=0;
+      var d=new Date(m+'-01T12:00:00');
+      var lbl=d.toLocaleDateString('es-CL',{month:'long',year:'numeric'}).toUpperCase();
+      return '<div class="user-row"><div class="user-row-info"><div class="user-row-name">'+escSvg(lbl)+'</div><div class="user-row-email">'+m+'</div></div>'+
+        (cerrado?'<span class="role-badge admin">🔒 Cerrado</span><button class="btn-quitar" onclick="abrirMes(\''+m+'\')" title="Abrir">↻</button>':'<button class="btn-s" style="padding:6px 12px;font-size:11px" onclick="cerrarMes(\''+m+'\')">Cerrar</button>')+
+      '</div>';
+    }).join('');
+}
+function renderAuditoria(body){
+  body.innerHTML='<p style="color:var(--mu);font-size:13px;padding:14px">Cargando log…</p>';
+  window.__FB.getAuditLog(50).then(function(entries){
+    if(!entries.length){body.innerHTML='<p style="color:var(--mu);font-size:13px;text-align:center;padding:24px">Sin actividad registrada</p>';return;}
+    var icoMap={edit:'✏️',delete:'🗑',cierre:'🔒',apertura:'🔓',price_migration:'🔧',role:'🛡',recalc:'⚙️',auto_kilero:'🏷'};
+    body.innerHTML=
+      '<div style="font-size:10px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;margin-bottom:10px">📜 Últimos '+entries.length+' eventos</div>'+
+      entries.map(function(e){
+        var d=new Date(e.at||0);
+        var fecha=d.toLocaleString('es-CL',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        var ico=icoMap[e.action]||'•';
+        var who=e.user&&e.user.name?e.user.name:'?';
+        var det='';
+        if(e.action==='edit'&&e.before&&e.after){
+          var ch=[];
+          if(e.before.totalVenta!==e.after.totalVenta)ch.push('Total: '+fmt(e.before.totalVenta||0)+' → '+fmt(e.after.totalVenta||0));
+          if(e.before.cliente!==e.after.cliente)ch.push('Cliente: '+(e.before.cliente||'—')+' → '+(e.after.cliente||'—'));
+          if(e.before.ventaPor!==e.after.ventaPor)ch.push('Canal: '+(e.before.ventaPor||'—')+' → '+(e.after.ventaPor||'—'));
+          det=ch.length?ch.join(' · '):'sin cambios visibles';
+        } else if(e.action==='delete'&&e.before){
+          det='"'+escSvg(e.before.cliente||'—')+'" · '+fmt(e.before.totalVenta||0);
+        } else if(e.mes){det='Mes '+e.mes;}
+        else if(e.detalle){det=e.detalle;}
+        return '<div class="aud-row">'+
+          '<div class="aud-ico">'+ico+'</div>'+
+          '<div class="aud-info"><div class="aud-head"><strong>'+escSvg(who)+'</strong> <span class="aud-act">'+e.action+'</span></div><div class="aud-det">'+escSvg(det)+'</div><div class="aud-time">'+fecha+'</div></div>'+
+        '</div>';
+      }).join('');
+  }).catch(function(){body.innerHTML='<p style="color:var(--er);font-size:13px;text-align:center;padding:14px">Error cargando log</p>';});
+}
+function cerrarMes(m){
+  if(!confirm('¿Cerrar el mes '+m+'? Las ventas no se podrán editar ni borrar.'))return;
+  var nueva=mesesCerrados.slice();if(nueva.indexOf(m)<0)nueva.push(m);
+  window.__FB.saveCierres(nueva).then(function(){
+    bitacora('cierre',{mes:m});
+    toastOk('Mes cerrado');loadAdmin('c');
+  });
+}
+function abrirMes(m){
+  if(!confirm('¿Reabrir el mes '+m+'?'))return;
+  var nueva=mesesCerrados.filter(function(x){return x!==m;});
+  window.__FB.saveCierres(nueva).then(function(){
+    bitacora('apertura',{mes:m});
+    toastOk('Mes reabierto');loadAdmin('c');
+  });
+}
+function adChangeRole(uid,rol,name){
+  if(!confirm('¿Cambiar rol de '+name+' a "'+rol+'"?'))return;
+  window.__FB.saveUser(uid,{role:rol}).then(function(){
+    bitacora('role',{detalle:name+' → '+rol});
+    toastOk('Rol actualizado');loadAdmin('u');
   });
 }
 function adDel(uid,name){if(!confirm('¿Eliminar perfil de '+name+'?'))return;window.__FB.deleteUser(uid).then(function(){toast('Perfil eliminado');loadAdmin(aTab);});}
@@ -1680,9 +1902,11 @@ function adCreate(){
   var err=document.getElementById('nuErr');
   if(!n||!e||!p){err.textContent='Completa todos los campos';err.style.display='block';return;}
   err.style.display='none';
+  var rol=(document.getElementById('nuR')||{}).value||'user';
   window.__FB.createUser(e.toLowerCase(),p).then(function(c){
-    return window.__FB.saveUser(c.user.uid,{uid:c.user.uid,email:c.user.email,name:n,role:window.__FB.isAdmin(e)?'admin':'user',createdAt:Date.now()});
-  }).then(function(){toast('Usuario creado ✓');loadAdmin('u');}).catch(function(ex){
+    var rolFinal=window.__FB.isAdmin(e)?'admin':rol;
+    return window.__FB.saveUser(c.user.uid,{uid:c.user.uid,email:c.user.email,name:n,role:rolFinal,createdAt:Date.now()});
+  }).then(function(){bitacora('role',{detalle:n+' creado como '+rol});toast('Usuario creado ✓');loadAdmin('u');}).catch(function(ex){
     var m={'auth/email-already-in-use':'Email ya registrado','auth/weak-password':'Mínimo 6 caracteres','auth/invalid-email':'Email inválido'};
     err.textContent=m[ex.code]||ex.message;err.style.display='block';
   });
