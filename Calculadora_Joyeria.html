@@ -626,7 +626,7 @@ function htmlVenta(){
       (pD>0?'<div class="res-fila"><span class="rl">Diego ('+pD+'%)</span><span class="rv gold" id="rD">$0</span></div>':'')+
       '<div class="res-fila"><span class="rl">'+dist.key+' ('+pV+'%)</span><span class="rv verde" id="rVl">$0</span></div></div>';})() +
     '<div class="sec"><div class="sec-t">Mensaje para Copiar</div><div class="msg" id="mBox">—</div></div>'+
-    '<div><button class="btn-p" onclick="guardarVenta()">💾 Guardar Venta</button>'+
+    '<div><button class="btn-p" id="btnGuardar" onclick="guardarVenta()">💾 Guardar Venta</button>'+
       '<button class="btn-s" onclick="copiarMsg()">📋 Copiar Mensaje</button>'+
       '<button class="btn-s btn-danger" onclick="limpiar()">🗑 Limpiar todo</button></div>';
 }
@@ -793,7 +793,9 @@ function _resetForm(){
 }
 function limpiar(){if(!confirm('¿Limpiar todos los datos?'))return;_resetForm();}
 
+var SAVING_VENTA=false;
 function guardarVenta(){
+  if(SAVING_VENTA)return;
   var venta=parseMoneda((document.getElementById('vTotal')||{}).value);
   var cliente=((document.getElementById('vCliente')||{}).value||'').trim();
   if(venta<=0){toast('Ingresa el total de venta primero');return;}
@@ -823,10 +825,16 @@ function guardarVenta(){
     mensaje:(document.getElementById('mBox')||{}).textContent||'',
     userId:fbUser.uid,userName:nom,
   };
+  SAVING_VENTA=true;
+  var btn=document.getElementById('btnGuardar'),txtOrig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Guardando…';btn.style.opacity='.6';btn.style.cursor='not-allowed';}
   window.__FB.saveVenta(fbUser.uid,reg).then(function(){
     _resetForm();
     toastOk('✓ Venta guardada correctamente');
-  }).catch(function(e){toast('Error: '+e.message);});
+  }).catch(function(e){toast('Error: '+e.message);}).finally(function(){
+    SAVING_VENTA=false;
+    if(btn){btn.disabled=false;btn.textContent=txtOrig||'💾 Guardar Venta';btn.style.opacity='';btn.style.cursor='';}
+  });
 }
 
 function eliminarVenta(id){
