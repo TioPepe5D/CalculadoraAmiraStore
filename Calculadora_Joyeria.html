@@ -1118,7 +1118,7 @@ function renderHLista(){
         '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+empChip+lockChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
         '<div class="hitems">'+(lineas||insumos?
           '<table class="hitems-tbl">'+
-            '<thead><tr><th>Producto</th><th class="c">Gramos / Un.</th><th class="r">Venta</th></tr></thead>'+
+            '<thead><tr><th>Producto</th><th class="c">Gramos / Un.</th><th class="r">Costo</th></tr></thead>'+
             '<tbody>'+lineas+insumos+'</tbody>'+
             '<tfoot><tr><td>Total Vendido</td><td class="gr">'+escSvg(grLbl)+'</td><td class="mt">'+fmt(totMt)+'</td></tr></tfoot>'+
           '</table>'
