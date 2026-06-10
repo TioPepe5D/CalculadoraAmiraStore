@@ -503,6 +503,12 @@ function comFor(v){
 var KILERO_PGR={Cadena:{400:1,405:1},Micro:{550:1,570:1},GF18K:{1200:1,1500:1}};
 function esKileroLinea(l){return !!(l&&KILERO_PGR[l.cat]&&KILERO_PGR[l.cat][l.pgr]);}
 function ventaTieneKilero(v){return (v&&v.lineas||[]).some(esKileroLinea);}
+// Diego: todas sus ventas se consideran pagadas a Empresa, sin importar lo que diga el campo guardado.
+function pagoAOf(v){
+  if(!v)return 'vendedor';
+  if(String(v.userName||'').trim().toLowerCase()==='diego')return 'empresa';
+  return v.pagoA||'vendedor';
+}
 var EN={Cadena:'Cadena',Micro:'Micro',Italy:'Italy',GF18K:'GF 18 K'};
 var EE={Cadena:'🇨🇱',Micro:'🇨🇱',Italy:'🇮🇹',GF18K:'⚜️'};
 var hPer='todo';
@@ -607,9 +613,12 @@ function restTema(){
 
 function htmlVenta(){
   var nomVend=nicerName((profile&&profile.name)||(fbUser&&fbUser.email&&fbUser.email.split('@')[0])||'Vendedor');
+  var esDg=isDiegoUser();
+  var optV='<option value="vendedor"'+(esDg?'':' selected')+'>'+escSvg(nomVend)+'</option>';
+  var optE='<option value="empresa"'+(esDg?' selected':'')+'>Empresa</option>';
   return '<div class="sec"><div class="sec-t">Información de Venta</div>'+
     '<div class="campo"><label>Venta Por</label><select id="vPor"><option>WhatsApp</option><option>Instagram</option><option>Oficina</option></select></div>'+
-    '<div class="campo"><label>Pagó A</label><select id="vPagoA"><option value="vendedor">'+escSvg(nomVend)+'</option><option value="empresa">Empresa</option></select></div>'+
+    '<div class="campo"><label>Pagó A</label><select id="vPagoA">'+optV+optE+'</select></div>'+
     '<div class="campo"><label>Nombre Cliente</label><input type="text" id="vCliente" placeholder="Nombre del cliente"></div>'+
     '<div class="campo"><label>Total de Venta ($)</label><input type="text" inputmode="numeric" id="vTotal" placeholder="Ej: $45.890" oninput="fmtMonedaInput(this)"></div></div>'+
     '<div class="sec"><div class="sec-t">Detalles de Los Gramos</div>'+
@@ -797,7 +806,7 @@ function _resetForm(){
     var pel=document.getElementById('p-'+cat);if(pel)pel.textContent='$'+def[cat].toLocaleString('es-CL')+'/gr';
   });
   var vp=document.getElementById('vPor');if(vp)vp.selectedIndex=0;
-  var vpa=document.getElementById('vPagoA');if(vpa)vpa.selectedIndex=0;
+  var vpa=document.getElementById('vPagoA');if(vpa)vpa.value=isDiegoUser()?'empresa':'vendedor';
   ins=[];renderIns();imgUrl=null;calcular();
 }
 function limpiar(){if(!confirm('¿Limpiar todos los datos?'))return;_resetForm();}
@@ -865,7 +874,7 @@ function editarVenta(id){
   var canales=['WhatsApp','Instagram','Oficina'];
   var canalOpts=canales.map(function(c){return '<option'+(c===canalActual?' selected':'')+'>'+c+'</option>';}).join('');
   var nomVendVenta=nicerName(v.userName||'Vendedor');
-  var pagoActual=v.pagoA||'vendedor';
+  var pagoActual=pagoAOf(v);
   var pagoOpts='<option value="vendedor"'+(pagoActual==='vendedor'?' selected':'')+'>'+escSvg(nomVendVenta)+'</option><option value="empresa"'+(pagoActual==='empresa'?' selected':'')+'>Empresa</option>';
   var cats=[
     {k:'Cadena',n:'🇨🇱 Cadena',norm:PRECIO_NORMAL.Cadena,kil:PRECIO_KILERO.Cadena},
@@ -1045,8 +1054,8 @@ function renderHLista(){
   var hBase=hFiltrar();
   if(hUser)hBase=hBase.filter(function(v){return v.userId===hUser;});
   if(hKil==='kilero')hBase=hBase.filter(ventaTieneKilero);
-  if(hPagoFilt==='empresa')hBase=hBase.filter(function(v){return (v.pagoA||'vendedor')==='empresa';});
-  else if(hPagoFilt==='vendedor')hBase=hBase.filter(function(v){return (v.pagoA||'vendedor')!=='empresa';});
+  if(hPagoFilt==='empresa')hBase=hBase.filter(function(v){return pagoAOf(v)==='empresa';});
+  else if(hPagoFilt==='vendedor')hBase=hBase.filter(function(v){return pagoAOf(v)!=='empresa';});
   else if(hKil==='normal')hBase=hBase.filter(function(v){return !ventaTieneKilero(v);});
   var h=q?hBase.filter(function(v){return(v.cliente||'').toLowerCase().includes(q)||(v.ventaPor||'').toLowerCase().includes(q)||(v.userName||'').toLowerCase().includes(q);}) :hBase;
   var ttv=0;
@@ -1108,7 +1117,7 @@ function renderHLista(){
       var pillVendedor='<div class="hpill"><div class="hpill-circ" style="background:'+avatarColor(nom)+'">'+initial(nom)+'</div><div class="hpill-info"><span class="l">Vendedor</span><span class="v">'+escSvg(nom)+'</span></div></div>';
       var pillCanal=vPorLbl!=='—'?'<div class="hpill"><div class="hpill-circ" style="background:#5b9aa0">📦</div><div class="hpill-info"><span class="l">Canal</span><span class="v">'+escSvg(canalShown)+'</span></div></div>':'';
       var kileroChip=ventaTieneKilero(v)?'<span class="kbadge">🏷 KILERO</span>':'';
-      var pagoEmp=(v.pagoA||'vendedor')==='empresa';
+      var pagoEmp=pagoAOf(v)==='empresa';
       var empChip=pagoEmp?'<span class="ebadge">🏢 EMPRESA</span>':'';
       var cerrado=estaCerrado(v.at);
       var lockChip=cerrado?'<span class="lockchip" title="Período cerrado">🔒</span>':'';
@@ -1189,7 +1198,7 @@ function renderRep(){
       tV+=venta;tC+=costo;tU+=util;
       var c=comFor(v);tD+=c.diego;tVl+=c.vendedor;
       // pagoA: 'empresa' o 'vendedor' (default vendedor para retrocompat)
-      var pago=(v.pagoA||'vendedor');
+      var pago=pagoAOf(v);
       if(pago==='empresa')payE+=venta;else payV+=venta;
     });
     return {tV:tV,tU:tU,tD:tD,tVl:tVl,tC:tC,payV:payV,payE:payE,cnt:h.length};
@@ -1255,7 +1264,7 @@ function renderRep(){
         if(!bu[uid])bu[uid]={name:nicerName(v.userName),cnt:0,tV:0,tU:0,tD:0,tVl:0,tC:0,payV:0,payE:0};
         var venta=v.totalVenta||0,costo=costoReal(v),util=venta-costo,c=comFor(v);
         bu[uid].cnt++;bu[uid].tV+=venta;bu[uid].tC+=costo;bu[uid].tU+=util;bu[uid].tD+=c.diego;bu[uid].tVl+=c.vendedor;
-        var pago=(v.pagoA||'vendedor');
+        var pago=pagoAOf(v);
         if(pago==='empresa')bu[uid].payE+=venta;else bu[uid].payV+=venta;
       });
       return bu;
