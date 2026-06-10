@@ -1125,7 +1125,7 @@ function renderHLista(){
           :'<div style="padding:14px;text-align:center;color:var(--mu);font-size:12px">—</div>')+'</div>'+
         '<div class="hpill-row">'+pillVendedor+pillCanal+'</div>'+
         '<div class="hventa-bottom">'+
-          '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div>'+(totGr>0?'<div style="font-size:11px;color:var(--mu);margin-top:4px">'+(Math.round(totGr*10)/10)+'g en oro</div>':'')+'</div>'+
+          '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div></div>'+
           '<div class="hventa-acc">'+
             '<button class="hbtn" onclick="copiarMsgH(\''+v.id+'\')" title="Copiar">💬</button>'+
             (editable?'<button class="hbtn" onclick="editarVenta(\''+v.id+'\')" title="Editar">✏️</button>':'')+
