@@ -123,15 +123,24 @@ select option{background:var(--sf2);color:var(--tx)}
 .hday-head-l{font-size:12px;letter-spacing:2.5px;color:var(--mu);text-transform:uppercase;font-weight:700}
 .hday-head-r{font-family:var(--hf);font-size:18px;font-weight:800;color:var(--ac)}
 .htag-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
-.hitems{background:rgba(0,0,0,.18);border:1px solid var(--bd);border-radius:14px;padding:4px 14px;margin:14px 0 16px}
-.hitem{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04);gap:10px}
-.hitem:last-child{border-bottom:none}
-.hitem-l{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-.hitem-emo{font-size:18px;flex-shrink:0;line-height:1;width:22px;text-align:center}
-.hitem-nom{font-size:14.5px;color:var(--mu);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hitem-r{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.hitem-gr{font-size:12px;color:var(--mu);font-weight:500}
-.hitem-mt{font-family:var(--hf);font-size:14.5px;color:var(--tx);font-weight:700}
+.hitems{background:rgba(0,0,0,.18);border:1px solid var(--bd);border-radius:14px;margin:14px 0 16px;overflow:hidden}
+.hitems-tbl{width:100%;border-collapse:collapse}
+.hitems-tbl thead th{font-size:9.5px;letter-spacing:1.5px;color:var(--mu);text-transform:uppercase;font-weight:700;padding:12px 14px;border-bottom:1px solid var(--bd);text-align:left;background:rgba(255,255,255,.02)}
+.hitems-tbl thead th.c{text-align:center}
+.hitems-tbl thead th.r{text-align:right}
+.hitems-tbl tbody td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);border-right:1px solid rgba(255,255,255,.04);font-size:14.5px;color:var(--tx);vertical-align:middle}
+.hitems-tbl tbody td:last-child{border-right:none}
+.hitems-tbl tbody tr:last-child td{border-bottom:none}
+.hitems-tbl tbody td.gr{text-align:center;font-size:12.5px;color:var(--mu);font-weight:500;width:1%;white-space:nowrap}
+.hitems-tbl tbody td.mt{text-align:right;font-family:var(--hf);font-weight:700;width:1%;white-space:nowrap}
+.hitems-tbl thead th:first-child,.hitems-tbl tbody td:first-child{border-right:1px solid rgba(255,255,255,.04)}
+.hitems-tbl tfoot td{padding:11px 14px;border-top:1px solid var(--bd);background:rgba(255,255,255,.025);font-size:10px;letter-spacing:1.5px;color:var(--mu);text-transform:uppercase;font-weight:700;border-right:1px solid rgba(255,255,255,.04)}
+.hitems-tbl tfoot td:last-child{border-right:none}
+.hitems-tbl tfoot td.gr{text-align:center;font-family:var(--hf);font-size:12.5px;color:var(--mu);font-weight:700;letter-spacing:0;text-transform:none}
+.hitems-tbl tfoot td.mt{text-align:right;font-family:var(--hf);font-size:15px;color:var(--ac);font-weight:800;letter-spacing:0;text-transform:none}
+.hitem-nom{display:inline-flex;align-items:center;gap:8px;color:var(--tx)}
+.hitem-nom .e{font-size:16px;line-height:1}
+.kchip{display:inline-block;background:#e8b04b;color:#1a1a1a;font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:6px;margin-left:5px;letter-spacing:.5px}
 .hitem .kchip{display:inline-block;background:#e8b04b;color:#1a1a1a;font-size:8.5px;font-weight:800;padding:1px 5px;border-radius:6px;margin-left:5px;letter-spacing:.5px}
 .htag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:22px;padding:8px 13px;font-size:13px;color:var(--tx);font-weight:500}
 .htag i{font-style:normal;color:var(--mu);font-size:12px;margin-left:2px}
@@ -1069,16 +1078,18 @@ function renderHLista(){
     var nom=EN[l.cat]||l.cat,em=EE[l.cat]||'';
     var kil=esKileroLinea(l);
     var mt=(l.gr||0)*(l.pgr||0);
-    return '<div class="hitem">'+
-      '<div class="hitem-l"><span class="hitem-emo">'+em+'</span><span class="hitem-nom">'+escSvg(nom)+(kil?'<span class="kchip">K</span>':'')+'</span></div>'+
-      '<div class="hitem-r"><span class="hitem-gr">'+l.gr+'g</span><span class="hitem-mt">'+fmt(mt)+'</span></div>'+
-    '</div>';
+    return '<tr>'+
+      '<td><span class="hitem-nom"><span class="e">'+em+'</span>'+escSvg(nom)+(kil?'<span class="kchip">K</span>':'')+'</span></td>'+
+      '<td class="gr">'+l.gr+'g</td>'+
+      '<td class="mt">'+fmt(mt)+'</td>'+
+    '</tr>';
   }
   function insumoRow(i){
-    return '<div class="hitem">'+
-      '<div class="hitem-l"><span class="hitem-emo">💎</span><span class="hitem-nom">'+escSvg(i.desc||'Insumo')+'</span></div>'+
-      '<div class="hitem-r"><span class="hitem-mt">'+fmt(i.costo||0)+'</span></div>'+
-    '</div>';
+    return '<tr>'+
+      '<td><span class="hitem-nom"><span class="e">💎</span>'+escSvg(i.desc||'Insumo')+'</span></td>'+
+      '<td class="gr">1 un.</td>'+
+      '<td class="mt">'+fmt(i.costo||0)+'</td>'+
+    '</tr>';
   }
 
   lista.innerHTML=orden.map(function(k){
@@ -1088,6 +1099,9 @@ function renderHLista(){
       var lineas=(v.lineas||[]).map(lineaRow).join('');
       var insumos=(v.insumos||[]).map(insumoRow).join('');
       var totGr=(v.lineas||[]).reduce(function(s,l){return s+(l.gr||0);},0);
+      var totIns=(v.insumos||[]).reduce(function(s,i){return s+(i.costo||0);},0);
+      var totMt=(v.lineas||[]).reduce(function(s,l){return s+((l.gr||0)*(l.pgr||0));},0)+totIns;
+      var grLbl=(Math.round(totGr*10)/10)+'g';
       var vPorLbl=(v.ventaPor||'').trim()||'—';
       var canalShown=vPorLbl==='Venta en oficina'?'Oficina':vPorLbl;
       var nom=nicerName(v.userName);
@@ -1102,7 +1116,13 @@ function renderHLista(){
       var fechaLbl=g.lbl==='HOY'?'Hoy':g.lbl==='AYER'?'Ayer':(v.fecha||'');
       return '<div class="hventa'+(ventaTieneKilero(v)?' kilero':'')+(pagoEmp?' empresa':'')+(cerrado?' cerrada':'')+'">'+
         '<div class="hventa-top"><div class="hventa-nombre">'+escSvg(v.cliente||'—')+kileroChip+empChip+lockChip+'</div><div class="hventa-fecha">'+escSvg(fechaLbl)+' · '+escSvg(v.hora||'')+'</div></div>'+
-        '<div class="hitems">'+(lineas||insumos?(lineas+insumos):'<div class="hitem"><div class="hitem-l"><span class="hitem-nom">—</span></div></div>')+'</div>'+
+        '<div class="hitems">'+(lineas||insumos?
+          '<table class="hitems-tbl">'+
+            '<thead><tr><th>Producto</th><th class="c">Gramos / Un.</th><th class="r">Venta</th></tr></thead>'+
+            '<tbody>'+lineas+insumos+'</tbody>'+
+            '<tfoot><tr><td>Total Vendido</td><td class="gr">'+escSvg(grLbl)+'</td><td class="mt">'+fmt(totMt)+'</td></tr></tfoot>'+
+          '</table>'
+          :'<div style="padding:14px;text-align:center;color:var(--mu);font-size:12px">—</div>')+'</div>'+
         '<div class="hpill-row">'+pillVendedor+pillCanal+'</div>'+
         '<div class="hventa-bottom">'+
           '<div><div class="hventa-clp">CLP</div><div class="hventa-total">'+fmt(v.totalVenta||0)+'</div>'+(totGr>0?'<div style="font-size:11px;color:var(--mu);margin-top:4px">'+(Math.round(totGr*10)/10)+'g en oro</div>':'')+'</div>'+
