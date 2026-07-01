@@ -1768,6 +1768,89 @@ function autoKileroJunio(){
   });
 }
 
+function verificarMes(){
+  if(!canViewAll()){toast('Sin permisos');return;}
+  var mes=(document.getElementById('verMes')||{}).value;
+  if(!mes){toast('Elegí un mes');return;}
+  var lista=ventas.filter(function(v){return mesKeyDe(v.at)===mes;});
+  var box=document.getElementById('verOut');if(!box)return;
+  if(!lista.length){box.innerHTML='<p style="color:var(--mu);font-size:13px;padding:10px">Sin ventas en '+mes+'</p>';return;}
+
+  var probs=[];
+  var tV=0,tC=0,tU=0,tVend=0,tEmp=0,payV=0,payE=0;
+  var porVend={};
+  lista.forEach(function(v){
+    var venta=v.totalVenta||0;
+    var costo=costoReal(v);
+    var util=venta-costo;
+    var c=comFor(v);
+    tV+=venta;tC+=costo;tU+=util;tVend+=c.vendedor;tEmp+=c.diego;
+    if(pagoAOf(v)==='empresa')payE+=venta;else payV+=venta;
+    var nom=nicerName(v.userName);
+    if(!porVend[nom])porVend[nom]={n:0,venta:0,util:0,vend:0,emp:0};
+    porVend[nom].n++;porVend[nom].venta+=venta;porVend[nom].util+=util;porVend[nom].vend+=c.vendedor;porVend[nom].emp+=c.diego;
+
+    // Chequeos por venta
+    var cli=v.cliente||v.id;
+    if(venta<=0)probs.push({t:'err',m:'"'+cli+'": venta en $0'});
+    if(!(v.lineas&&v.lineas.length)&&!(v.insumos&&v.insumos.length))probs.push({t:'warn',m:'"'+cli+'": sin productos ni insumos'});
+    (v.lineas||[]).forEach(function(l){
+      if(!l.pgr||l.pgr<=0)probs.push({t:'err',m:'"'+cli+'": '+(l.cat||'?')+' sin precio/gramo'});
+    });
+    // utilidad guardada vs recalculada
+    if(v.utilidad!==undefined&&Math.abs((v.utilidad||0)-util)>1)probs.push({t:'warn',m:'"'+cli+'": utilidad guardada '+fmt(v.utilidad||0)+' ≠ recalc '+fmt(util)});
+    // kilero no aplicado
+    if(!isDiegoVenta(v)&&ventaCumpleKilero(v)&&!ventaTieneKilero(v))probs.push({t:'warn',m:'"'+cli+'": cumple kilero (≥500g o ≥$250.000) pero está a precio normal'});
+    // costo mayor que venta (utilidad negativa)
+    if(util<0)probs.push({t:'warn',m:'"'+cli+'": utilidad negativa '+fmt(util)+' (costo > venta)'});
+  });
+
+  // Cuadres globales
+  var cuadreUtil=Math.abs((tVend+tEmp)-tU)<=lista.length; // tolerancia por redondeos
+  var cuadrePagos=Math.abs((payV+payE)-tV)<1;
+
+  function row(lbl,val,extra){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px"><span style="color:var(--mu)">'+lbl+'</span><span style="font-family:var(--hf);font-weight:700;color:'+(extra||'var(--tx)')+'">'+val+'</span></div>';}
+
+  var vendHtml=Object.keys(porVend).sort(function(a,b){return porVend[b].venta-porVend[a].venta;}).map(function(n){
+    var p=porVend[n];
+    return '<div style="background:rgba(0,0,0,.15);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:6px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>'+escSvg(n)+'</span><span style="color:var(--ac);font-family:var(--hf)">'+fmt(p.venta)+'</span></div>'+
+      '<div style="font-size:11px;color:var(--mu);margin-top:3px">'+p.n+' venta'+(p.n===1?'':'s')+' · Util '+fmt(p.util)+' · Vend '+fmt(p.vend)+' · Emp '+fmt(p.emp)+'</div>'+
+    '</div>';
+  }).join('');
+
+  var probHtml;
+  if(!probs.length){
+    probHtml='<div style="background:rgba(127,176,105,.1);border:1px solid rgba(127,176,105,.4);border-radius:8px;padding:12px;text-align:center;color:var(--ok);font-weight:700;font-size:13px">✓ Sin problemas detectados</div>';
+  } else {
+    var errs=probs.filter(function(p){return p.t==='err';});
+    var warns=probs.filter(function(p){return p.t==='warn';});
+    probHtml='<div style="font-size:11px;letter-spacing:.15em;color:var(--mu);text-transform:uppercase;margin:4px 0 8px">'+errs.length+' error(es) · '+warns.length+' aviso(s)</div>'+
+      probs.map(function(p){
+        var col=p.t==='err'?'var(--er)':'#e8b04b',ico=p.t==='err'?'⛔':'⚠️';
+        return '<div style="display:flex;gap:8px;padding:6px 8px;background:rgba(0,0,0,.15);border-left:3px solid '+col+';border-radius:4px;margin-bottom:4px;font-size:12px;color:var(--tx)"><span>'+ico+'</span><span>'+escSvg(p.m)+'</span></div>';
+      }).join('');
+  }
+
+  box.innerHTML=
+    '<div style="margin-top:12px">'+
+      row('Ventas',lista.length+'','var(--ac)')+
+      row('Venta Total',fmt(tV),'var(--ac)')+
+      row('Costo Total',fmt(tC))+
+      row('Utilidad',fmt(tU),tU>=0?'var(--ok)':'var(--er)')+
+      row('→ Vendedores',fmt(tVend),'var(--ok)')+
+      row('→ Empresa',fmt(tEmp))+
+      row('Pagos a Vendedor',fmt(payV))+
+      row('Pagos a Empresa',fmt(payE))+
+    '</div>'+
+    '<div style="margin:12px 0;padding:10px;border-radius:8px;background:'+((cuadreUtil&&cuadrePagos)?'rgba(127,176,105,.1)':'rgba(200,80,80,.1)')+';border:1px solid '+((cuadreUtil&&cuadrePagos)?'rgba(127,176,105,.4)':'rgba(200,80,80,.4)')+'">'+
+      '<div style="font-size:12px;color:'+(cuadreUtil?'var(--ok)':'var(--er)')+'">'+(cuadreUtil?'✓':'✗')+' Vendedor + Empresa = Utilidad ('+fmt(tVend+tEmp)+' vs '+fmt(tU)+')</div>'+
+      '<div style="font-size:12px;margin-top:4px;color:'+(cuadrePagos?'var(--ok)':'var(--er)')+'">'+(cuadrePagos?'✓':'✗')+' Pagos Vendedor + Empresa = Venta ('+fmt(payV+payE)+' vs '+fmt(tV)+')</div>'+
+    '</div>'+
+    '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin:14px 0 8px">Por vendedor</div>'+vendHtml+
+    '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin:14px 0 8px">Chequeos</div>'+probHtml;
+}
+
 function recalcularComisiones(){
   if(!window.__FB.isAdmin(fbUser.email)){toast('Solo admin');return;}
   if(!ventas.length){toast('Sin ventas');return;}
@@ -1923,7 +2006,15 @@ function renderCierres(body){
   var meses={};ventas.forEach(function(v){if(v.at)meses[mesKeyDe(v.at)]=1;});
   var ahora=mesKeyDe(Date.now());meses[ahora]=1;
   var lista=Object.keys(meses).sort().reverse();
+  var nombresMes=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var mesOpts=lista.map(function(m){var d=new Date(m+'-01T12:00:00');return '<option value="'+m+'"'+(m===ahora?' selected':'')+'>'+nombresMes[d.getMonth()]+' '+d.getFullYear()+'</option>';}).join('');
   body.innerHTML=
+    '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔍 Verificar antes de cerrar</div>'+
+    '<p class="nota" style="margin-bottom:10px">Revisá que los cálculos cuadren antes de cerrar el mes.</p>'+
+    '<div style="display:flex;gap:8px;margin-bottom:6px"><select id="verMes" class="mes-select" style="flex:1;margin:0">'+mesOpts+'</select>'+
+    '<button class="btn-s" style="width:auto;margin:0;padding:9px 16px;white-space:nowrap" onclick="verificarMes()">Verificar</button></div>'+
+    '<div id="verOut"></div>'+
+    '<div style="border-top:1px solid var(--bd);margin:18px 0 14px"></div>'+
     '<div style="font-size:10px;letter-spacing:.2em;color:var(--ac);text-transform:uppercase;margin-bottom:10px">🔒 Cierre de períodos</div>'+
     '<p class="nota" style="margin-bottom:14px">Cerrar un mes bloquea la edición y eliminación de sus ventas. Solo admin puede reabrirlo.</p>'+
     lista.map(function(m){
